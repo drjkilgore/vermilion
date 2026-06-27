@@ -1,0 +1,13 @@
+{
+  "name": "Vermilion — Original works by Barbara",
+  "short_name": "Vermilion",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FBF7F1",
+  "theme_color": "#E0301E",
+  "icons": [
+    { "src": "vermilion-icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
