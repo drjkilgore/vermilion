@@ -4,6 +4,13 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>VERMILION — Original works by Barbara</title>
+<link rel="icon" type="image/png" href="vermilion-icon.png" />
+<link rel="apple-touch-icon" href="vermilion-icon.png" />
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#E0301E" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Vermilion" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400;1,6..96,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
@@ -21,7 +28,7 @@
 }
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;transition:background .3s,color .3s;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;transition:background .3s,color .3s;overflow-x:hidden;}
 a{color:inherit;}
 button{font-family:inherit;cursor:pointer;}
 img{display:block;max-width:100%;}
@@ -119,6 +126,15 @@ img{display:block;max-width:100%;}
 .empty h2{font-family:var(--serif);font-weight:400;font-size:30px;color:var(--text);margin:0 0 8px;}
 .banner{background:var(--oxblood);color:#ffe9e4;text-align:center;font-size:13px;padding:10px;letter-spacing:.04em;}
 .banner b{color:#fff;}
+
+/* ---------- about ---------- */
+.about{display:grid;grid-template-columns:0.92fr 1.08fr;gap:56px;align-items:center;padding:56px 0 90px;}
+.about .portrait img{width:100%;border-radius:2px;box-shadow:0 30px 70px rgba(28,23,20,.18);}
+.about .bio h1{font-family:var(--serif);font-weight:400;font-size:clamp(34px,5vw,56px);line-height:1;margin:8px 0 22px;}
+.about .bio-body p{font-size:15.5px;line-height:1.75;color:#46403b;margin:0 0 16px;max-width:54ch;}
+[data-theme=dark] .about .bio-body p{color:#cfc7bd;}
+.about .about-meta{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--slate);border-top:1px solid var(--border);padding-top:16px;margin-top:10px;}
+@media(max-width:880px){.about{grid-template-columns:1fr;gap:30px;padding-top:36px;}}
 
 /* ---------- showcase overlay ---------- */
 .showcase{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column;}
@@ -228,6 +244,16 @@ img{display:block;max-width:100%;}
   .nav{order:6;flex:1 1 100%;justify-content:center;margin-left:0;}
   .nav button{padding:8px 10px;}
 }
+@media(max-width:640px){
+  .wrap{padding:0 22px;}
+  .btn{width:100%;}
+  .form-actions{flex-direction:column-reverse;gap:10px;}
+  .adrow{grid-template-columns:52px 1fr;}
+  .adrow .acts{grid-column:1 / -1;justify-content:flex-start;flex-wrap:wrap;margin-top:8px;}
+  .sc-info{padding:24px 22px;}
+  .filters{gap:8px;}
+  .filters select,.filters input[type=number]{flex:1 1 44%;min-width:0;}
+}
 .spin{display:inline-block;width:16px;height:16px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite;}
 @keyframes sp{to{transform:rotate(360deg);}}
 @keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
@@ -249,6 +275,7 @@ img{display:block;max-width:100%;}
       <button data-view="gallery" onclick="go('gallery')">Gallery</button>
       <button data-view="grid" onclick="go('grid')">Grid</button>
       <button data-view="collections" onclick="go('collections')">Collections</button>
+      <button data-view="about" onclick="go('about')">About</button>
     </nav>
     <div class="spacer"></div>
     <div class="search-mini">
@@ -280,6 +307,14 @@ var SUPABASE_URL  = "https://msojmpxesbyegbxloday.supabase.co";
 var SUPABASE_ANON_KEY = "sb_publishable_TxLbSRQcbklkSZRHIY7m1A_Y_bcDixZ";
 var ARTIST_EMAIL  = "barbara@example.com";   // where "Inquire" messages go — change to Barbara's real inbox
 var ARTIST_INTRO  = "A catalogue of original works. Each piece is one of a kind.";
+var ARTIST_NAME   = "Barbara";
+var ARTIST_PHOTO  = "barbara-portrait.jpg";   // add this image file to your repo root
+var ARTIST_BIO    = [
+  "Barbara is a self-taught artist whose love of art runs through everything she does — looking at it, researching it, collecting it, and, above all, making it.",
+  "A graduate of the University of Michigan, she built a wide-ranging career before turning to the studio full time. She spent years in higher-education administration, earned her license as both a real estate agent and an insurance agent, and most recently helped her husband build a multi-state alternative teacher certification program from the ground up.",
+  "With that chapter complete, she made a deliberate decision — to retire, and give herself fully to her art. She now creates on her own terms, guided by a lifelong eye and a deep curiosity for the history and craft behind every piece.",
+  "Vermilion is the result: a growing body of original work, each piece made by hand, each one entirely her own."
+];
 /* ============================================================ */
 
 var COLORS = [
@@ -376,6 +411,7 @@ function clearFilters(){state.filters={q:state.filters.q,collection:"",availabil
 /* ---------- render dispatch ---------- */
 function render(){
   if(state.view==="admin"){renderAdmin();return;}
+  if(state.view==="about"){syncNav();renderAbout();return;}
   if(!sb){renderUnconfigured();return;}
   syncNav();
   if(state.view==="collections"){renderCollections();return;}
@@ -466,6 +502,19 @@ function renderCollections(){
   $("app").innerHTML=html;
 }
 function openCollection(id){state.view="gallery";state.activeCollection=id;syncNav();renderListing();window.scrollTo(0,0);}
+
+function renderAbout(){
+  var ps=ARTIST_BIO.map(function(p){return '<p>'+esc(p)+'</p>';}).join("");
+  $("app").innerHTML='<div class="wrap"><div class="about fade">'+
+    '<div class="portrait"><img src="'+esc(ARTIST_PHOTO)+'" alt="'+esc(ARTIST_NAME)+'" onerror="this.style.display=\'none\'"/></div>'+
+    '<div class="bio">'+
+      '<p class="kick cap" style="color:var(--lacquer)">The artist</p>'+
+      '<h1>'+esc(ARTIST_NAME)+'</h1>'+
+      '<div class="bio-body">'+ps+'</div>'+
+      '<div class="about-meta">Self-taught · University of Michigan</div>'+
+      '<button class="btn red" style="margin-top:24px" onclick="go(\'gallery\')">View the gallery</button>'+
+    '</div></div></div>';
+}
 
 /* ---------- showcase ---------- */
 var scState={list:[],idx:0,imgIdx:0};
