@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>VERMILION — Original works by Barbara</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400;1,6..96,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --vermilion:#E0301E; --lacquer:#B0160A; --oxblood:#4A1512;
+  --ink:#1C1714; --wall:#FBF7F1; --stone:#E9E2D6; --slate:#8A847C;
+  --champagne:#BFA06A;
+  --bg:var(--wall); --surface:#ffffff; --text:var(--ink); --muted:#6c655f;
+  --border:#E4DCCF; --serif:"Bodoni Moda",Georgia,serif; --sans:"Inter",system-ui,sans-serif;
+}
+[data-theme="dark"]{
+  --bg:#181310; --surface:#221B17; --text:#F4EEE6; --muted:#A79F95;
+  --border:#352B24; --stone:#352B24;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased;transition:background .3s,color .3s;}
+a{color:inherit;}
+button{font-family:inherit;cursor:pointer;}
+img{display:block;max-width:100%;}
+.wrap{max-width:1240px;margin:0 auto;padding:0 28px;}
+.hidden{display:none !important;}
+.serif{font-family:var(--serif);}
+.cap{font-size:11px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;}
+
+/* ---------- top bar ---------- */
+.topbar{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);}
+.topbar-in{display:flex;align-items:center;gap:18px;height:68px;}
+.brand{display:flex;align-items:center;gap:12px;cursor:pointer;user-select:none;}
+.brand .seal{width:34px;height:34px;background:var(--vermilion);display:flex;align-items:center;justify-content:center;position:relative;flex:0 0 auto;}
+.brand .seal::after{content:"";position:absolute;inset:4px;border:1px solid rgba(251,247,241,.4);}
+.brand .seal span{font-family:var(--serif);font-weight:500;font-size:19px;color:var(--wall);transform:translateY(1px);}
+.brand .wm{font-family:var(--serif);font-size:23px;letter-spacing:.16em;text-indent:.16em;}
+.nav{display:flex;gap:4px;margin-left:8px;}
+.nav button{background:none;border:0;color:var(--muted);font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:8px 12px;border-radius:2px;transition:color .2s;}
+.nav button:hover{color:var(--text);}
+.nav button.active{color:var(--vermilion);}
+.spacer{flex:1;}
+.icon-btn{background:none;border:1px solid var(--border);color:var(--text);width:38px;height:38px;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:16px;transition:border-color .2s;}
+.icon-btn:hover{border-color:var(--slate);}
+.search-mini{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:2px;padding:0 12px;height:38px;}
+.search-mini input{background:none;border:0;outline:0;color:var(--text);font-family:inherit;font-size:14px;width:150px;}
+.search-mini input::placeholder{color:var(--slate);}
+
+/* ---------- page intro ---------- */
+.intro{padding:60px 0 26px;}
+.intro .kick{color:var(--lacquer);margin:0 0 14px;}
+.intro h1{font-family:var(--serif);font-weight:400;font-size:clamp(34px,6vw,64px);line-height:1;margin:0;letter-spacing:.01em;}
+.intro p{color:var(--muted);max-width:56ch;margin:14px 0 0;font-size:15px;}
+
+/* ---------- filter bar ---------- */
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:18px 0 6px;border-top:1px solid var(--border);margin-top:26px;}
+.filters select,.filters input[type=number]{background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:inherit;font-size:13px;padding:8px 10px;border-radius:2px;outline:0;}
+.filters input[type=number]{width:92px;}
+.chipset{display:flex;gap:6px;flex-wrap:wrap;}
+.colorchip{width:22px;height:22px;border-radius:50%;border:1px solid rgba(0,0,0,.18);cursor:pointer;position:relative;}
+.colorchip.on{box-shadow:0 0 0 2px var(--vermilion);}
+.filters .clear{background:none;border:0;color:var(--vermilion);font-size:12px;font-weight:500;letter-spacing:.06em;text-decoration:underline;text-underline-offset:3px;}
+.result-count{color:var(--slate);font-size:12px;letter-spacing:.1em;text-transform:uppercase;padding:14px 0 0;}
+
+/* ---------- gallery view ---------- */
+.gallery{display:flex;flex-direction:column;gap:64px;padding:30px 0 90px;}
+.g-row{display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:center;}
+.g-row:nth-child(even){grid-template-columns:.85fr 1.15fr;}
+.g-row:nth-child(even) .g-meta{order:-1;}
+.g-art{position:relative;overflow:hidden;background:var(--stone);cursor:pointer;}
+.g-art img{width:100%;height:100%;object-fit:cover;transition:transform 1.1s cubic-bezier(.2,.7,.2,1);}
+.g-art:hover img{transform:scale(1.04);}
+.g-meta .col{color:var(--lacquer);margin:0 0 12px;}
+.g-meta h2{font-family:var(--serif);font-weight:400;font-size:clamp(26px,3.4vw,40px);line-height:1.02;margin:0;cursor:pointer;}
+.g-meta .det{color:var(--muted);font-size:14px;margin:10px 0 0;}
+.g-meta .desc{font-size:14px;margin:16px 0 0;max-width:46ch;}
+.g-foot{display:flex;align-items:center;gap:16px;margin-top:22px;}
+.price{font-family:var(--serif);font-size:22px;color:var(--text);}
+.tag{font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;padding:5px 10px;border-radius:2px;}
+.tag.available{background:rgba(99,153,34,.14);color:#3B6D11;}
+.tag.reserved{background:rgba(191,160,106,.18);color:#7d6428;}
+.tag.sold{background:rgba(224,48,30,.12);color:var(--lacquer);}
+[data-theme=dark] .tag.available{color:#9bd45a;}
+[data-theme=dark] .tag.reserved{color:#d7b878;}
+[data-theme=dark] .tag.sold{color:#f08a7d;}
+
+/* ---------- grid view ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:14px;padding:30px 0 90px;}
+.cell{position:relative;aspect-ratio:1/1;overflow:hidden;background:var(--stone);cursor:pointer;}
+.cell img{width:100%;height:100%;object-fit:cover;transition:transform .9s cubic-bezier(.2,.7,.2,1);}
+.cell:hover img{transform:scale(1.05);}
+.cell .ov{position:absolute;inset:0;background:linear-gradient(to top,rgba(28,23,20,.82),rgba(28,23,20,0) 55%);opacity:0;transition:opacity .3s;display:flex;flex-direction:column;justify-content:flex-end;padding:16px;}
+.cell:hover .ov{opacity:1;}
+.cell .ov h3{font-family:var(--serif);color:var(--wall);font-weight:400;font-size:20px;margin:0;line-height:1.05;}
+.cell .ov span{color:#e8ded2;font-size:12px;margin-top:4px;}
+
+/* ---------- collections view ---------- */
+.cols{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:22px;padding:30px 0 90px;}
+.colcard{cursor:pointer;}
+.colcard .img{aspect-ratio:4/3;overflow:hidden;background:var(--stone);}
+.colcard .img img{width:100%;height:100%;object-fit:cover;transition:transform 1s cubic-bezier(.2,.7,.2,1);}
+.colcard:hover .img img{transform:scale(1.04);}
+.colcard h3{font-family:var(--serif);font-weight:400;font-size:26px;margin:16px 0 4px;}
+.colcard p{color:var(--muted);font-size:13.5px;margin:0;}
+.colcard .n{color:var(--slate);font-size:11px;letter-spacing:.16em;text-transform:uppercase;margin-top:8px;}
+
+/* ---------- empty / banner ---------- */
+.empty{text-align:center;padding:120px 20px;color:var(--muted);}
+.empty .seal{width:64px;height:64px;background:var(--vermilion);display:inline-flex;align-items:center;justify-content:center;position:relative;margin-bottom:24px;}
+.empty .seal::after{content:"";position:absolute;inset:7px;border:1px solid rgba(251,247,241,.4);}
+.empty .seal span{font-family:var(--serif);font-weight:500;font-size:34px;color:var(--wall);}
+.empty h2{font-family:var(--serif);font-weight:400;font-size:30px;color:var(--text);margin:0 0 8px;}
+.banner{background:var(--oxblood);color:#ffe9e4;text-align:center;font-size:13px;padding:10px;letter-spacing:.04em;}
+.banner b{color:#fff;}
+
+/* ---------- showcase overlay ---------- */
+.showcase{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column;}
+.sc-bar{display:flex;align-items:center;gap:14px;height:64px;padding:0 24px;border-bottom:1px solid var(--border);}
+.sc-bar .t{font-family:var(--serif);font-size:20px;}
+.sc-body{flex:1;display:grid;grid-template-columns:1.5fr 1fr;min-height:0;}
+.sc-stage{background:var(--ink);display:flex;align-items:center;justify-content:center;position:relative;min-height:0;padding:30px;}
+.sc-stage img{max-width:100%;max-height:100%;object-fit:contain;box-shadow:0 30px 80px rgba(0,0,0,.5);}
+.sc-arrow{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:46px;border-radius:50%;background:rgba(251,247,241,.12);color:#fff;border:0;font-size:20px;display:flex;align-items:center;justify-content:center;}
+.sc-arrow:hover{background:rgba(251,247,241,.24);}
+.sc-arrow.prev{left:18px;} .sc-arrow.next{right:18px;}
+.sc-thumbs{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:8px;}
+.sc-thumbs img{width:52px;height:52px;object-fit:cover;opacity:.5;cursor:pointer;border:1px solid transparent;}
+.sc-thumbs img.on{opacity:1;border-color:var(--vermilion);}
+.sc-info{overflow-y:auto;padding:38px 40px;}
+.sc-info .col{color:var(--lacquer);margin:0 0 12px;}
+.sc-info h1{font-family:var(--serif);font-weight:400;font-size:40px;line-height:1;margin:0 0 6px;}
+.sc-info .yr{font-family:var(--serif);font-style:italic;color:var(--slate);font-size:18px;}
+.sc-specs{margin:24px 0;border-top:1px solid var(--border);}
+.sc-specs .r{display:flex;justify-content:space-between;gap:16px;padding:11px 0;border-bottom:1px solid var(--border);font-size:14px;}
+.sc-specs .r .k{color:var(--slate);}
+.sc-specs .r .v{text-align:right;}
+.sc-block{margin:22px 0;}
+.sc-block h4{font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--slate);margin:0 0 8px;}
+.sc-block p{font-size:14.5px;margin:0;white-space:pre-wrap;}
+.sc-price{font-family:var(--serif);font-size:30px;margin:8px 0 18px;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:var(--sans);font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:13px 22px;border-radius:2px;border:1px solid var(--text);background:none;color:var(--text);text-decoration:none;transition:.2s;}
+.btn:hover{background:var(--text);color:var(--bg);}
+.btn.red{background:var(--vermilion);border-color:var(--vermilion);color:var(--wall);}
+.btn.red:hover{background:var(--lacquer);border-color:var(--lacquer);}
+.tags-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:18px;}
+.tags-row span{font-size:11px;letter-spacing:.06em;color:var(--muted);border:1px solid var(--border);border-radius:20px;padding:4px 11px;}
+
+/* ---------- admin ---------- */
+.admin{padding:30px 0 90px;}
+.login{max-width:380px;margin:80px auto;text-align:center;}
+.login .seal{width:60px;height:60px;background:var(--vermilion);display:inline-flex;align-items:center;justify-content:center;position:relative;margin-bottom:22px;}
+.login .seal::after{content:"";position:absolute;inset:6px;border:1px solid rgba(251,247,241,.4);}
+.login .seal span{font-family:var(--serif);font-weight:500;font-size:32px;color:var(--wall);}
+.login h2{font-family:var(--serif);font-weight:400;font-size:28px;margin:0 0 22px;}
+.field{text-align:left;margin-bottom:14px;}
+.field label{display:block;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--slate);margin-bottom:6px;}
+.field input,.field select,.field textarea{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:inherit;font-size:14px;padding:11px 12px;border-radius:2px;outline:0;}
+.field textarea{resize:vertical;min-height:84px;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--vermilion);}
+.err{color:var(--vermilion);font-size:13px;margin:6px 0;}
+.admin-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:24px;}
+.admin-head h1{font-family:var(--serif);font-weight:400;font-size:34px;margin:0;}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:28px;}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:16px;}
+.stat .n{font-family:var(--serif);font-size:30px;line-height:1;}
+.stat .l{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--slate);margin-top:8px;}
+.rowtools{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
+.adlist{border:1px solid var(--border);border-radius:2px;overflow:hidden;}
+.adrow{display:grid;grid-template-columns:64px 1fr auto;gap:16px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);}
+.adrow:last-child{border-bottom:0;}
+.adrow .th{width:64px;height:64px;object-fit:cover;background:var(--stone);}
+.adrow .ti{font-family:var(--serif);font-size:19px;}
+.adrow .sub{font-size:12px;color:var(--slate);}
+.adrow .acts{display:flex;gap:8px;align-items:center;}
+.pill{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;padding:4px 9px;border-radius:2px;border:1px solid var(--border);color:var(--muted);}
+.pill.pub{color:#3B6D11;border-color:rgba(99,153,34,.4);}
+.mini{font-size:12px;font-weight:600;letter-spacing:.06em;padding:7px 12px;border-radius:2px;border:1px solid var(--border);background:none;color:var(--text);}
+.mini:hover{border-color:var(--slate);}
+.mini.danger{color:var(--vermilion);border-color:rgba(224,48,30,.4);}
+
+/* form */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.form-grid .full{grid-column:1/-1;}
+.uploader{border:1.5px dashed var(--border);border-radius:2px;padding:22px;text-align:center;color:var(--muted);font-size:13px;cursor:pointer;}
+.uploader.drag{border-color:var(--vermilion);color:var(--vermilion);}
+.thumbs{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:14px;}
+.thumb{position:relative;aspect-ratio:1/1;overflow:hidden;border:1px solid var(--border);}
+.thumb img{width:100%;height:100%;object-fit:cover;}
+.thumb .badge{position:absolute;top:4px;left:4px;font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;background:var(--vermilion);color:#fff;padding:2px 6px;}
+.thumb .tb{position:absolute;bottom:0;left:0;right:0;display:flex;}
+.thumb .tb button{flex:1;background:rgba(28,23,20,.82);color:#fff;border:0;font-size:10px;padding:5px 2px;letter-spacing:.04em;}
+.thumb .tb button:hover{background:var(--vermilion);}
+.colorpick{display:flex;flex-wrap:wrap;gap:8px;}
+.colorpick .c{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;border:1px solid var(--border);padding:5px 9px;border-radius:20px;}
+.colorpick .c.on{border-color:var(--vermilion);color:var(--vermilion);}
+.colorpick .dot{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.2);}
+.form-actions{display:flex;gap:12px;justify-content:flex-end;margin-top:24px;flex-wrap:wrap;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--wall);padding:12px 22px;border-radius:2px;font-size:13px;letter-spacing:.04em;z-index:80;box-shadow:0 12px 40px rgba(0,0,0,.3);}
+
+@media(max-width:880px){
+  .g-row,.g-row:nth-child(even){grid-template-columns:1fr;gap:18px;}
+  .g-row:nth-child(even) .g-meta{order:0;}
+  .sc-body{grid-template-columns:1fr;}
+  .sc-stage{min-height:46vh;}
+  .form-grid{grid-template-columns:1fr;}
+  .topbar-in{height:auto;flex-wrap:wrap;padding-top:10px;padding-bottom:10px;gap:10px;}
+  .brand .wm{font-size:20px;}
+  .search-mini{order:5;flex:1 1 100%;}
+  .search-mini input{width:100%;}
+  .nav{order:6;flex:1 1 100%;justify-content:center;margin-left:0;}
+  .nav button{padding:8px 10px;}
+}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg);}}
+@keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.fade{animation:fade .5s cubic-bezier(.2,.7,.2,1) both;}
+@media(prefers-reduced-motion:reduce){.fade,.g-art img,.cell img,.colcard .img img{animation:none;transition:none;}}
+</style>
+</head>
+<body>
+
+<div id="banner" class="banner hidden"></div>
+
+<header class="topbar">
+  <div class="wrap topbar-in">
+    <div class="brand" onclick="go('gallery')">
+      <div class="seal"><span>V</span></div>
+      <div class="wm">VERMILION</div>
+    </div>
+    <nav class="nav" id="nav">
+      <button data-view="gallery" onclick="go('gallery')">Gallery</button>
+      <button data-view="grid" onclick="go('grid')">Grid</button>
+      <button data-view="collections" onclick="go('collections')">Collections</button>
+    </nav>
+    <div class="spacer"></div>
+    <div class="search-mini">
+      <span aria-hidden="true">⌕</span>
+      <input id="search" type="search" placeholder="Search works" oninput="onSearch(this.value)" />
+    </div>
+    <button class="icon-btn" id="themeBtn" title="Toggle light / dark" onclick="toggleTheme()">◐</button>
+    <button class="icon-btn" title="Studio" onclick="go('admin')">✦</button>
+  </div>
+</header>
+
+<main id="app"></main>
+<div id="overlay"></div>
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+/* ============================================================
+   VERMILION — configuration
+   Fill these three values, commit, deploy. Nothing else to edit.
+   ============================================================ */
+var SUPABASE_URL  = "https://YOUR-PROJECT.supabase.co";
+var SUPABASE_ANON_KEY = "YOUR-ANON-KEY";
+var ARTIST_EMAIL  = "barbara@example.com";   // where "Inquire" messages go
+var ARTIST_INTRO  = "A catalogue of original works. Each piece is one of a kind.";
+/* ============================================================ */
+
+var COLORS = [
+  ["Red","#E0301E"],["Orange","#D2662B"],["Yellow","#E2B33A"],["Green","#4F7F3C"],
+  ["Blue","#2F5F9E"],["Purple","#6A4A8C"],["Pink","#C76C93"],["Brown","#7A5238"],
+  ["Black","#1C1714"],["White","#F3EFE8"],["Gray","#8A847C"],["Gold","#BFA06A"],["Multicolor","#9a9a9a"]
+];
+var colorHex = {}; COLORS.forEach(function(c){colorHex[c[0]]=c[1];});
+
+var configured = SUPABASE_URL.indexOf("YOUR-PROJECT")===-1 && SUPABASE_ANON_KEY.indexOf("YOUR-ANON")===-1;
+var sb = configured ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+var state = {
+  view:"gallery", artworks:[], collections:[], session:null,
+  filters:{q:"",collection:"",availability:"",medium:"",subject:"",size:"",year:"",pmin:"",pmax:"",colors:[]},
+  activeCollection:null
+};
+
+/* ---------- helpers ---------- */
+function $(id){return document.getElementById(id);}
+function esc(s){return (s==null?"":String(s)).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function money(a,c){if(a==null||a==="")return"";try{return new Intl.NumberFormat("en-US",{style:"currency",currency:c||"USD",maximumFractionDigits:0}).format(a);}catch(e){return "$"+a;}}
+function primaryUrl(a){if(a.primary_image_url)return a.primary_image_url;var im=(a.artwork_images||[]).slice().sort(byOrder);for(var i=0;i<im.length;i++)if(im[i].is_primary)return im[i].url;return im[0]?im[0].url:placeholder();}
+function byOrder(x,y){return (x.sort_order||0)-(y.sort_order||0);}
+function placeholder(){return "data:image/svg+xml;utf8,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600"><rect width="600" height="600" fill="#E9E2D6"/><text x="300" y="320" font-family="Georgia" font-size="120" fill="#cbbfa9" text-anchor="middle">V</text></svg>');}
+function sizeBucket(a){var m=Math.max(a.width_in||0,a.height_in||0);if(!m)return"";return m<24?"Small":m<=48?"Medium":"Large";}
+function toast(msg){var t=$("toast");t.innerHTML='<div class="toast">'+esc(msg)+'</div>';setTimeout(function(){t.innerHTML="";},2600);}
+function setBanner(html){var b=$("banner");if(!html){b.classList.add("hidden");return;}b.innerHTML=html;b.classList.remove("hidden");}
+
+/* ---------- theme ---------- */
+function toggleTheme(){var d=document.documentElement.getAttribute("data-theme")==="dark";setTheme(d?"light":"dark");}
+function setTheme(t){document.documentElement.setAttribute("data-theme",t);try{localStorage.setItem("vermilion-theme",t);}catch(e){}}
+(function(){var t="light";try{t=localStorage.getItem("vermilion-theme")||"light";}catch(e){}setTheme(t);})();
+
+/* ---------- routing ---------- */
+function go(view){
+  if(view==="admin"){location.hash="#admin";return;}
+  state.view=view;state.activeCollection=null;location.hash="";
+  syncNav();render();
+}
+function syncNav(){var b=document.querySelectorAll("#nav button");b.forEach(function(x){x.classList.toggle("active",x.getAttribute("data-view")===state.view);});}
+window.addEventListener("hashchange",routeHash);
+function routeHash(){
+  var h=location.hash;
+  if(h.indexOf("#admin")===0){state.view="admin";render();return;}
+  if(h.indexOf("#art/")===0){openShowcase(h.slice(5));return;}
+  if(state.view==="admin"){state.view="gallery";}
+  syncNav();render();
+}
+
+/* ---------- data ---------- */
+function loadPublic(){
+  if(!sb){renderUnconfigured();return Promise.resolve();}
+  return Promise.all([
+    sb.from("artworks").select("*, artwork_images(*), collections(name,slug)").eq("status","published").order("sort_order",{ascending:true}).order("created_at",{ascending:false}),
+    sb.from("collections").select("*").order("sort_order",{ascending:true})
+  ]).then(function(r){
+    state.artworks=(r[0].data||[]); state.collections=(r[1].data||[]);
+    if(r[0].error)console.warn(r[0].error);
+    render();
+  });
+}
+function loadAdmin(){
+  return Promise.all([
+    sb.from("artworks").select("*, artwork_images(*), collections(name)").order("updated_at",{ascending:false}),
+    sb.from("collections").select("*").order("sort_order",{ascending:true})
+  ]).then(function(r){state.artworks=(r[0].data||[]);state.collections=(r[1].data||[]);renderAdminList();});
+}
+
+/* ---------- filtering ---------- */
+function filtered(){
+  var f=state.filters, q=f.q.toLowerCase();
+  return state.artworks.filter(function(a){
+    if(state.activeCollection && a.collection_id!==state.activeCollection)return false;
+    if(f.collection && a.collection_id!==f.collection)return false;
+    if(f.availability && a.availability!==f.availability)return false;
+    if(f.medium && (a.medium||"")!==f.medium)return false;
+    if(f.subject && (a.subject||"")!==f.subject)return false;
+    if(f.size && sizeBucket(a)!==f.size)return false;
+    if(f.year && String(a.year||"")!==f.year)return false;
+    if(f.pmin!=="" && (a.price==null||a.price<+f.pmin))return false;
+    if(f.pmax!=="" && (a.price==null||a.price>+f.pmax))return false;
+    if(f.colors.length){var cp=a.color_palette||[];for(var i=0;i<f.colors.length;i++)if(cp.indexOf(f.colors[i])===-1)return false;}
+    if(q){var hay=(a.title+" "+(a.description||"")+" "+(a.medium||"")+" "+(a.subject||"")+" "+((a.tags||[]).join(" "))).toLowerCase();if(hay.indexOf(q)===-1)return false;}
+    return true;
+  });
+}
+function onSearch(v){state.filters.q=v;if(sb&&state.view!=="admin"&&state.view!=="collections")render();}
+function uniq(key){var s={};state.artworks.forEach(function(a){if(a[key])s[a[key]]=1;});return Object.keys(s).sort();}
+function setFilter(k,v){state.filters[k]=v;render();}
+function toggleColor(c){var arr=state.filters.colors,i=arr.indexOf(c);if(i===-1)arr.push(c);else arr.splice(i,1);render();}
+function clearFilters(){state.filters={q:state.filters.q,collection:"",availability:"",medium:"",subject:"",size:"",year:"",pmin:"",pmax:"",colors:[]};render();}
+
+/* ---------- render dispatch ---------- */
+function render(){
+  if(state.view==="admin"){renderAdmin();return;}
+  if(!sb){renderUnconfigured();return;}
+  syncNav();
+  if(state.view==="collections"){renderCollections();return;}
+  renderListing();
+}
+
+function renderUnconfigured(){
+  $("app").innerHTML='<div class="wrap"><div class="empty fade"><div class="seal"><span>V</span></div>'+
+    '<h2>Not connected yet</h2><p>Add your Supabase URL and anon key near the top of this file, then deploy. See SETUP.md for the 10-minute walkthrough.</p></div></div>';
+}
+
+function filterBar(){
+  var f=state.filters;
+  function opts(list,sel,blank){var h='<option value="">'+blank+'</option>';list.forEach(function(o){var val=o.v!==undefined?o.v:o,lab=o.l!==undefined?o.l:o;h+='<option value="'+esc(val)+'"'+(String(sel)===String(val)?" selected":"")+'>'+esc(lab)+'</option>';});return h;}
+  var colChips=COLORS.map(function(c){return '<div class="colorchip'+(f.colors.indexOf(c[0])>-1?" on":"")+'" title="'+c[0]+'" style="background:'+c[1]+'" onclick="toggleColor(\''+c[0]+'\')"></div>';}).join("");
+  return '<div class="filters">'+
+    '<select onchange="setFilter(\'collection\',this.value)">'+opts(state.collections.map(function(c){return{v:c.id,l:c.name};}),f.collection,"All collections")+'</select>'+
+    '<select onchange="setFilter(\'availability\',this.value)">'+opts([{v:"available",l:"Available"},{v:"reserved",l:"Reserved"},{v:"sold",l:"Sold"}],f.availability,"Any status")+'</select>'+
+    '<select onchange="setFilter(\'medium\',this.value)">'+opts(uniq("medium"),f.medium,"Any medium")+'</select>'+
+    '<select onchange="setFilter(\'subject\',this.value)">'+opts(uniq("subject"),f.subject,"Any subject")+'</select>'+
+    '<select onchange="setFilter(\'size\',this.value)">'+opts(["Small","Medium","Large"],f.size,"Any size")+'</select>'+
+    '<select onchange="setFilter(\'year\',this.value)">'+opts(uniq("year"),f.year,"Any year")+'</select>'+
+    '<input type="number" placeholder="$ min" value="'+esc(f.pmin)+'" onchange="setFilter(\'pmin\',this.value)"/>'+
+    '<input type="number" placeholder="$ max" value="'+esc(f.pmax)+'" onchange="setFilter(\'pmax\',this.value)"/>'+
+    '<div class="chipset">'+colChips+'</div>'+
+    '<button class="clear" onclick="clearFilters()">Clear</button>'+
+  '</div>';
+}
+
+function introBlock(title,sub){
+  return '<div class="intro fade"><p class="kick cap">'+esc(sub||"Catalogue")+'</p><h1>'+esc(title)+'</h1>'+
+    (state.view==="gallery"&&!state.activeCollection?'<p>'+esc(ARTIST_INTRO)+'</p>':'')+'</div>';
+}
+
+function renderListing(){
+  var items=filtered();
+  var title=state.activeCollection? (colName(state.activeCollection)) : (state.view==="grid"?"The Grid":"Gallery");
+  var sub=state.activeCollection?"Collection":"Original works by Barbara";
+  var html='<div class="wrap">'+introBlock(title,sub)+filterBar()+
+    '<div class="result-count">'+items.length+' work'+(items.length===1?"":"s")+'</div>';
+  if(!items.length){
+    html+='<div class="empty"><h2>Nothing here yet</h2><p>'+(state.artworks.length?"No works match these filters.":"Published works will appear here.")+'</p></div></div>';
+    $("app").innerHTML=html;return;
+  }
+  if(state.view==="grid"){
+    html+='<div class="grid fade">'+items.map(gridCell).join("")+'</div>';
+  }else{
+    html+='<div class="gallery fade">'+items.map(galleryRow).join("")+'</div>';
+  }
+  html+='</div>';
+  $("app").innerHTML=html;
+}
+function colName(id){for(var i=0;i<state.collections.length;i++)if(state.collections[i].id===id)return state.collections[i].name;return"Collection";}
+
+function galleryRow(a){
+  var det=[a.medium,a.dimensions,a.year].filter(Boolean).join(" · ");
+  return '<article class="g-row">'+
+    '<div class="g-art" onclick="openShowcase(\''+a.id+'\')"><img loading="lazy" src="'+esc(primaryUrl(a))+'" alt="'+esc(a.title)+'"/></div>'+
+    '<div class="g-meta">'+
+      (a.collections?'<p class="col cap">'+esc(a.collections.name)+'</p>':'')+
+      '<h2 onclick="openShowcase(\''+a.id+'\')">'+esc(a.title)+'</h2>'+
+      (det?'<p class="det">'+esc(det)+'</p>':'')+
+      (a.description?'<p class="desc">'+esc(a.description)+'</p>':'')+
+      '<div class="g-foot">'+
+        (a.price?'<span class="price">'+money(a.price,a.currency)+'</span>':'')+
+        '<span class="tag '+a.availability+'">'+a.availability+'</span>'+
+      '</div>'+
+    '</div></article>';
+}
+function gridCell(a){
+  return '<div class="cell" onclick="openShowcase(\''+a.id+'\')"><img loading="lazy" src="'+esc(primaryUrl(a))+'" alt="'+esc(a.title)+'"/>'+
+    '<div class="ov"><h3>'+esc(a.title)+'</h3><span>'+esc([a.year,a.price?money(a.price,a.currency):""].filter(Boolean).join(" · "))+'</span></div></div>';
+}
+
+function renderCollections(){
+  var html='<div class="wrap">'+introBlock("Collections","Bodies of work");
+  if(!state.collections.length){
+    html+='<div class="empty"><h2>No collections yet</h2><p>Group works into series from the studio.</p></div></div>';$("app").innerHTML=html;return;
+  }
+  html+='<div class="cols fade">'+state.collections.map(function(c){
+    var count=state.artworks.filter(function(a){return a.collection_id===c.id;}).length;
+    var cover=c.cover_image_url|| (function(){var a=state.artworks.filter(function(x){return x.collection_id===c.id;})[0];return a?primaryUrl(a):placeholder();})();
+    return '<div class="colcard" onclick="openCollection(\''+c.id+'\')">'+
+      '<div class="img"><img loading="lazy" src="'+esc(cover)+'" alt="'+esc(c.name)+'"/></div>'+
+      '<h3>'+esc(c.name)+'</h3>'+(c.description?'<p>'+esc(c.description)+'</p>':'')+
+      '<div class="n">'+count+' work'+(count===1?"":"s")+'</div></div>';
+  }).join("")+'</div></div>';
+  $("app").innerHTML=html;
+}
+function openCollection(id){state.view="gallery";state.activeCollection=id;syncNav();renderListing();window.scrollTo(0,0);}
+
+/* ---------- showcase ---------- */
+var scState={list:[],idx:0,imgIdx:0};
+function openShowcase(id){
+  var a=null;for(var i=0;i<state.artworks.length;i++)if(state.artworks[i].id===id)a=state.artworks[i];
+  if(!a){return;}
+  var pool=filtered();if(pool.indexOf(a)===-1)pool=state.artworks;
+  scState.list=pool;scState.idx=pool.indexOf(a);scState.imgIdx=0;
+  if(sb)sb.rpc("increment_artwork_views",{art_id:id});
+  paintShowcase();
+}
+function scNav(d){scState.idx=(scState.idx+d+scState.list.length)%scState.list.length;scState.imgIdx=0;paintShowcase();}
+function scImg(i){scState.imgIdx=i;paintShowcase();}
+function closeShowcase(){$("overlay").innerHTML="";document.body.style.overflow="";if(location.hash.indexOf("#art/")===0)history.replaceState(null,"","#");}
+function paintShowcase(){
+  var a=scState.list[scState.idx];if(!a)return;
+  var imgs=(a.artwork_images||[]).slice().sort(byOrder);if(!imgs.length)imgs=[{url:primaryUrl(a)}];
+  var cur=imgs[Math.min(scState.imgIdx,imgs.length-1)];
+  function row(k,v){return v?'<div class="r"><span class="k">'+esc(k)+'</span><span class="v">'+esc(v)+'</span></div>':"";}
+  var specs=row("Medium",a.medium)+row("Dimensions",a.dimensions)+row("Year",a.year)+
+    row("Framed",a.framed?"Framed":(a.framed===false?"Unframed":""))+row("Category",a.category)+
+    row("Subject",a.subject)+row("Inventory",a.inventory_number);
+  var blocks="";
+  if(a.story)blocks+='<div class="sc-block"><h4>The story</h4><p>'+esc(a.story)+'</p></div>';
+  if(a.inspiration)blocks+='<div class="sc-block"><h4>Inspiration</h4><p>'+esc(a.inspiration)+'</p></div>';
+  var tags=(a.tags||[]).length?'<div class="tags-row">'+a.tags.map(function(t){return '<span>'+esc(t)+'</span>';}).join("")+'</div>':"";
+  var thumbs=imgs.length>1?'<div class="sc-thumbs">'+imgs.map(function(im,i){return '<img src="'+esc(im.url)+'" class="'+(i===scState.imgIdx?"on":"")+'" onclick="scImg('+i+')"/>';}).join("")+'</div>':"";
+  var mailto="mailto:"+encodeURIComponent(ARTIST_EMAIL)+"?subject="+encodeURIComponent('Inquiry — "'+a.title+'"')+"&body="+encodeURIComponent('Hello Barbara,\n\nI\'d love to know more about "'+a.title+'"'+(a.inventory_number?" ("+a.inventory_number+")":"")+'.\n\n');
+  $("overlay").innerHTML=
+    '<div class="showcase fade">'+
+      '<div class="sc-bar"><div class="brand" onclick="closeShowcase()"><div class="seal"><span>V</span></div></div>'+
+        '<div class="t">'+esc(a.title)+'</div><div class="spacer"></div>'+
+        '<button class="icon-btn" onclick="scNav(-1)" title="Previous">‹</button>'+
+        '<button class="icon-btn" onclick="scNav(1)" title="Next">›</button>'+
+        '<button class="icon-btn" onclick="closeShowcase()" title="Close">✕</button></div>'+
+      '<div class="sc-body">'+
+        '<div class="sc-stage">'+
+          (imgs.length>1?'<button class="sc-arrow prev" onclick="scImg('+((scState.imgIdx-1+imgs.length)%imgs.length)+')">‹</button>':"")+
+          '<img src="'+esc(cur.url)+'" alt="'+esc(a.title)+'"/>'+
+          (imgs.length>1?'<button class="sc-arrow next" onclick="scImg('+((scState.imgIdx+1)%imgs.length)+')">›</button>':"")+
+          thumbs+
+        '</div>'+
+        '<div class="sc-info">'+
+          (a.collections?'<p class="col cap">'+esc(a.collections.name)+'</p>':'')+
+          '<h1>'+esc(a.title)+'</h1>'+(a.year?'<div class="yr">'+esc(a.year)+'</div>':'')+
+          '<div class="sc-specs">'+specs+'</div>'+
+          (a.description?'<div class="sc-block"><p>'+esc(a.description)+'</p></div>':'')+
+          blocks+
+          (a.price?'<div class="sc-price">'+money(a.price,a.currency)+'</div>':'')+
+          '<span class="tag '+a.availability+'" style="margin-bottom:16px;display:inline-block">'+a.availability+'</span><br/>'+
+          '<a class="btn red" href="'+mailto+'">Inquire</a> '+
+          '<a class="btn" href="'+mailto+'">Request details</a>'+
+          tags+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  document.body.style.overflow="hidden";
+  if(location.hash!=="#art/"+a.id)history.replaceState(null,"","#art/"+a.id);
+}
+document.addEventListener("keydown",function(e){
+  if(!$("overlay").innerHTML)return;
+  if(e.key==="Escape")closeShowcase();
+  if(e.key==="ArrowRight")scNav(1);
+  if(e.key==="ArrowLeft")scNav(-1);
+});
+
+/* ============================================================
+   ADMIN
+   ============================================================ */
+function renderAdmin(){
+  if(!sb){renderUnconfigured();return;}
+  sb.auth.getSession().then(function(r){
+    state.session=r.data.session;
+    if(!state.session){renderLogin();}else{loadAdmin();}
+  });
+}
+function renderLogin(err){
+  $("app").innerHTML='<div class="wrap"><div class="login fade">'+
+    '<div class="seal"><span>V</span></div><h2>Studio</h2>'+
+    '<div class="field"><label>Email</label><input id="le" type="email" autocomplete="username"/></div>'+
+    '<div class="field"><label>Password</label><input id="lp" type="password" autocomplete="current-password" onkeydown="if(event.key===\'Enter\')doLogin()"/></div>'+
+    (err?'<div class="err">'+esc(err)+'</div>':'')+
+    '<button class="btn red" style="width:100%" onclick="doLogin()">Enter studio</button>'+
+    '<p style="margin-top:18px;color:var(--slate);font-size:12px"><a href="#" onclick="go(\'gallery\');return false;">← Back to gallery</a></p>'+
+  '</div></div>';
+}
+function doLogin(){
+  var email=$("le").value.trim(),pw=$("lp").value;
+  if(!email||!pw){renderLogin("Enter your email and password.");return;}
+  sb.auth.signInWithPassword({email:email,password:pw}).then(function(r){
+    if(r.error){renderLogin(r.error.message);return;}
+    state.session=r.data.session;loadAdmin();
+  });
+}
+function logout(){sb.auth.signOut().then(function(){state.session=null;go("gallery");});}
+
+function renderAdminList(){
+  var a=state.artworks;
+  var pub=a.filter(function(x){return x.status==="published";}).length;
+  var avail=a.filter(function(x){return x.availability==="available";}).length;
+  var sold=a.filter(function(x){return x.availability==="sold";}).length;
+  var resv=a.filter(function(x){return x.availability==="reserved";}).length;
+  var views=a.reduce(function(s,x){return s+(x.views||0);},0);
+  var html='<div class="wrap admin fade">'+
+    '<div class="admin-head"><h1>Studio</h1><div class="spacer" style="flex:1"></div>'+
+      '<button class="mini" onclick="manageCollections()">Collections</button>'+
+      '<button class="mini" onclick="logout()">Sign out</button></div>'+
+    '<div class="stats">'+
+      stat(a.length,"Total works")+stat(pub,"Published")+stat(avail,"Available")+
+      stat(resv,"Reserved")+stat(sold,"Sold")+stat(views,"Total views")+'</div>'+
+    '<div class="rowtools"><button class="btn red" onclick="editArtwork(null)">+ New artwork</button></div>';
+  if(!a.length){
+    html+='<div class="empty"><h2>No works yet</h2><p>Add Barbara\'s first piece to begin the catalogue.</p></div>';
+  }else{
+    html+='<div class="adlist">'+a.map(adminRow).join("")+'</div>';
+  }
+  html+='</div>';$("app").innerHTML=html;
+}
+function stat(n,l){return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+esc(l)+'</div></div>';}
+function adminRow(a){
+  var nextAvail=a.availability==="available"?"reserved":a.availability==="reserved"?"sold":"available";
+  return '<div class="adrow">'+
+    '<img class="th" src="'+esc(primaryUrl(a))+'" alt=""/>'+
+    '<div><div class="ti">'+esc(a.title)+'</div>'+
+      '<div class="sub">'+esc([a.collections?a.collections.name:"",a.medium,a.dimensions,money(a.price,a.currency)].filter(Boolean).join("  ·  "))+'</div></div>'+
+    '<div class="acts">'+
+      '<span class="pill '+(a.status==="published"?"pub":"")+'">'+a.status+'</span>'+
+      '<button class="mini" onclick="cycleAvail(\''+a.id+'\',\''+nextAvail+'\')" title="Click to change">'+a.availability+'</button>'+
+      '<button class="mini" onclick="editArtwork(\''+a.id+'\')">Edit</button>'+
+      '<button class="mini danger" onclick="deleteArtwork(\''+a.id+'\')">Delete</button>'+
+    '</div></div>';
+}
+function cycleAvail(id,next){sb.from("artworks").update({availability:next}).eq("id",id).then(function(){loadAdmin();toast("Marked "+next);});}
+function deleteArtwork(id){
+  if(!confirm("Delete this artwork and its images permanently?"))return;
+  var a=byId(id);var paths=(a.artwork_images||[]).map(function(im){return im.storage_path;}).filter(Boolean);
+  var p=paths.length?sb.storage.from("artwork").remove(paths):Promise.resolve();
+  p.then(function(){return sb.from("artworks").delete().eq("id",id);}).then(function(){loadAdmin();toast("Deleted");});
+}
+function byId(id){for(var i=0;i<state.artworks.length;i++)if(state.artworks[i].id===id)return state.artworks[i];return null;}
+
+/* ----- artwork form ----- */
+var formImgs=[];      // {id?,url,storage_path?,is_primary,is_detail,file?,sort_order,caption}
+var formColors=[];
+function editArtwork(id){
+  var a=id?byId(id):{availability:"available",status:"draft",framed:false,currency:"USD"};
+  formImgs=id?(a.artwork_images||[]).slice().sort(byOrder).map(function(im){return {id:im.id,url:im.url,storage_path:im.storage_path,is_primary:im.is_primary,is_detail:im.is_detail,caption:im.caption||"",sort_order:im.sort_order||0};}):[];
+  formColors=(a.color_palette||[]).slice();
+  var colOpts='<option value="">— none —</option>'+state.collections.map(function(c){return '<option value="'+c.id+'"'+(a.collection_id===c.id?" selected":"")+'>'+esc(c.name)+'</option>';}).join("");
+  function inp(id,label,val,type,ph){return '<div class="field"><label>'+label+'</label><input id="'+id+'" type="'+(type||"text")+'" value="'+esc(val==null?"":val)+'" placeholder="'+esc(ph||"")+'"/></div>';}
+  function ta(id,label,val){return '<div class="field full"><label>'+label+'</label><textarea id="'+id+'">'+esc(val==null?"":val)+'</textarea></div>';}
+  var html='<div class="wrap admin fade">'+
+    '<div class="admin-head"><h1>'+(id?"Edit artwork":"New artwork")+'</h1><div class="spacer" style="flex:1"></div>'+
+      '<button class="mini" onclick="loadAdmin()">← Back</button></div>'+
+    '<div class="field full"><label>Images — first is the cover. Mark close-ups as “detail”.</label>'+
+      '<div class="uploader" id="drop" onclick="$(\'fileInput\').click()">Drag photos here, or click to choose. JPG / PNG / WEBP.</div>'+
+      '<input id="fileInput" type="file" accept="image/*" multiple style="display:none" onchange="addFiles(this.files)"/>'+
+      '<div class="thumbs" id="thumbs"></div></div>'+
+    '<div class="form-grid">'+
+      '<div class="field full">'+inpRaw("f_title","Title *",a.title)+'</div>'+
+      '<div class="field"><label>Collection</label><select id="f_collection">'+colOpts+'</select></div>'+
+      inp("f_medium","Medium",a.medium,"text","Oil on linen")+
+      inp("f_dimensions","Dimensions (text)",a.dimensions,"text","36 x 48 in")+
+      inp("f_year","Year",a.year,"number")+
+      inp("f_width","Width (in)",a.width_in,"number")+
+      inp("f_height","Height (in)",a.height_in,"number")+
+      inp("f_price","Price",a.price,"number")+
+      '<div class="field"><label>Availability</label><select id="f_availability">'+availOpts(a.availability)+'</select></div>'+
+      '<div class="field"><label>Status</label><select id="f_status"><option value="draft"'+(a.status==="draft"?" selected":"")+'>Draft (hidden)</option><option value="published"'+(a.status==="published"?" selected":"")+'>Published (live)</option></select></div>'+
+      inp("f_subject","Subject",a.subject,"text","Abstract / Landscape")+
+      inp("f_category","Category",a.category,"text")+
+      inp("f_inventory","Inventory #",a.inventory_number,"text")+
+      inp("f_location","Location",a.location,"text","Studio")+
+      '<div class="field"><label>Framing</label><select id="f_framed"><option value="false"'+(!a.framed?" selected":"")+'>Unframed</option><option value="true"'+(a.framed?" selected":"")+'>Framed</option></select></div>'+
+      inp("f_tags","Tags (comma separated)",(a.tags||[]).join(", "),"text","floral, red, large")+
+      '<div class="field full"><label>Color palette (for filtering)</label><div class="colorpick" id="colorpick">'+colorPickHtml()+'</div></div>'+
+      ta("f_description","Description",a.description)+
+      ta("f_story","The story behind the work",a.story)+
+      ta("f_inspiration","Inspiration",a.inspiration)+
+      inp("f_video","Video URL (optional)",a.video_url,"text","https://...")+
+    '</div>'+
+    '<div class="form-actions">'+
+      '<button class="btn" onclick="loadAdmin()">Cancel</button>'+
+      '<button class="btn red" id="saveBtn" onclick="saveArtwork(\''+(id||"")+'\')">Save artwork</button>'+
+    '</div></div>';
+  $("app").innerHTML=html;
+  paintThumbs();wireDrop();
+}
+function inpRaw(id,label,val){return '<label>'+label+'</label><input id="'+id+'" type="text" value="'+esc(val==null?"":val)+'"/>';}
+function availOpts(v){return ["available","reserved","sold"].map(function(o){return '<option value="'+o+'"'+(v===o?" selected":"")+'>'+o.charAt(0).toUpperCase()+o.slice(1)+'</option>';}).join("");}
+function colorPickHtml(){return COLORS.map(function(c){var on=formColors.indexOf(c[0])>-1;return '<div class="c'+(on?" on":"")+'" onclick="toggleFormColor(\''+c[0]+'\')"><span class="dot" style="background:'+c[1]+'"></span>'+c[0]+'</div>';}).join("");}
+function toggleFormColor(c){var i=formColors.indexOf(c);if(i===-1)formColors.push(c);else formColors.splice(i,1);$("colorpick").innerHTML=colorPickHtml();}
+
+function wireDrop(){var d=$("drop");if(!d)return;
+  ["dragenter","dragover"].forEach(function(ev){d.addEventListener(ev,function(e){e.preventDefault();d.classList.add("drag");});});
+  ["dragleave","drop"].forEach(function(ev){d.addEventListener(ev,function(e){e.preventDefault();d.classList.remove("drag");});});
+  d.addEventListener("drop",function(e){if(e.dataTransfer&&e.dataTransfer.files)addFiles(e.dataTransfer.files);});
+}
+function addFiles(files){
+  Array.prototype.forEach.call(files,function(f){
+    if(f.type.indexOf("image")!==0)return;
+    formImgs.push({url:URL.createObjectURL(f),file:f,is_primary:false,is_detail:false,caption:"",sort_order:formImgs.length});
+  });
+  if(!formImgs.some(function(x){return x.is_primary;})&&formImgs.length)formImgs[0].is_primary=true;
+  paintThumbs();
+}
+function paintThumbs(){
+  var t=$("thumbs");if(!t)return;
+  t.innerHTML=formImgs.map(function(im,i){
+    return '<div class="thumb">'+(im.is_primary?'<span class="badge">Cover</span>':"")+(im.is_detail?'<span class="badge" style="top:auto;bottom:26px;background:var(--champagne);color:#2c2410">Detail</span>':"")+
+      '<img src="'+esc(im.url)+'"/>'+
+      '<div class="tb"><button onclick="setPrimary('+i+')">Cover</button><button onclick="toggleDetail('+i+')">Detail</button><button onclick="removeImg('+i+')">✕</button></div></div>';
+  }).join("");
+}
+function setPrimary(i){formImgs.forEach(function(x,j){x.is_primary=(i===j);});paintThumbs();}
+function toggleDetail(i){formImgs[i].is_detail=!formImgs[i].is_detail;paintThumbs();}
+function removeImg(i){formImgs.splice(i,1);if(formImgs.length&&!formImgs.some(function(x){return x.is_primary;}))formImgs[0].is_primary=true;paintThumbs();}
+
+function saveArtwork(id){
+  var btn=$("saveBtn");var title=$("f_title").value.trim();
+  if(!title){toast("A title is required.");return;}
+  btn.innerHTML='<span class="spin"></span>';btn.disabled=true;
+  var rec={
+    title:title,
+    collection_id:$("f_collection").value||null,
+    medium:val("f_medium"),dimensions:val("f_dimensions"),
+    year:num("f_year"),width_in:num("f_width"),height_in:num("f_height"),price:num("f_price"),
+    availability:$("f_availability").value,status:$("f_status").value,
+    subject:val("f_subject"),category:val("f_category"),
+    inventory_number:val("f_inventory"),location:val("f_location"),
+    framed:$("f_framed").value==="true",
+    tags:val("f_tags")?val("f_tags").split(",").map(function(s){return s.trim();}).filter(Boolean):[],
+    color_palette:formColors.slice(),
+    description:val("f_description"),story:val("f_story"),inspiration:val("f_inspiration"),
+    video_url:val("f_video")||null
+  };
+  var work;
+  var ensure = id
+    ? sb.from("artworks").update(rec).eq("id",id).select().single()
+    : sb.from("artworks").insert(rec).select().single();
+  ensure.then(function(r){
+    if(r.error)throw r.error;
+    work=r.data;
+    return syncImages(work.id);
+  }).then(function(){
+    // set primary_image_url from the chosen cover
+    var cover=formImgs.filter(function(x){return x.is_primary;})[0]||formImgs[0];
+    return sb.from("artworks").update({primary_image_url:cover?cover.url:null}).eq("id",work.id);
+  }).then(function(){
+    toast("Saved");loadAdmin();
+  }).catch(function(e){
+    console.error(e);toast("Error: "+(e.message||"save failed"));
+    btn.innerHTML="Save artwork";btn.disabled=false;
+  });
+}
+function val(id){var e=$(id);return e?e.value.trim():"";}
+function num(id){var v=val(id);return v===""?null:Number(v);}
+
+function syncImages(artId){
+  // 1. delete removed existing images (in DB but not in formImgs)
+  var existing=(byId(artId)&&byId(artId).artwork_images)||[];
+  var keepIds={};formImgs.forEach(function(im){if(im.id)keepIds[im.id]=1;});
+  var toDelete=existing.filter(function(im){return !keepIds[im.id];});
+  var delPaths=toDelete.map(function(im){return im.storage_path;}).filter(Boolean);
+  var chain=Promise.resolve();
+  if(delPaths.length)chain=chain.then(function(){return sb.storage.from("artwork").remove(delPaths);});
+  if(toDelete.length)chain=chain.then(function(){return sb.from("artwork_images").delete().in("id",toDelete.map(function(im){return im.id;}));});
+  // 2. upload new files
+  formImgs.forEach(function(im,idx){
+    im.sort_order=idx;
+    if(im.file){
+      chain=chain.then(function(){
+        var ext=(im.file.name.split(".").pop()||"jpg").toLowerCase();
+        var path=artId+"/"+(crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+idx)+"."+ext;
+        return sb.storage.from("artwork").upload(path,im.file,{cacheControl:"3600",upsert:false}).then(function(up){
+          if(up.error)throw up.error;
+          var pub=sb.storage.from("artwork").getPublicUrl(path);
+          im.url=pub.data.publicUrl;im.storage_path=path;im.file=null;
+          return sb.from("artwork_images").insert({artwork_id:artId,url:im.url,storage_path:path,is_primary:!!im.is_primary,is_detail:!!im.is_detail,caption:im.caption||null,sort_order:idx});
+        });
+      });
+    }else if(im.id){
+      // update flags/order on existing
+      chain=chain.then(function(){return sb.from("artwork_images").update({is_primary:!!im.is_primary,is_detail:!!im.is_detail,sort_order:idx}).eq("id",im.id);});
+    }
+  });
+  return chain;
+}
+
+/* ----- collections manager ----- */
+function manageCollections(){
+  var html='<div class="wrap admin fade"><div class="admin-head"><h1>Collections</h1><div class="spacer" style="flex:1"></div><button class="mini" onclick="loadAdmin()">← Back</button></div>'+
+    '<div class="form-grid" style="max-width:680px">'+
+      '<div class="field"><label>New collection name</label><input id="nc_name"/></div>'+
+      '<div class="field"><label>Description</label><input id="nc_desc"/></div>'+
+      '<div class="field full"><button class="btn red" onclick="addCollection()">Add collection</button></div></div>'+
+    '<div class="adlist" style="margin-top:20px">'+
+      (state.collections.length?state.collections.map(function(c){
+        var count=state.artworks.filter(function(a){return a.collection_id===c.id;}).length;
+        return '<div class="adrow"><div></div><div><div class="ti">'+esc(c.name)+'</div><div class="sub">'+esc(c.description||"")+' · '+count+' works</div></div>'+
+          '<div class="acts"><button class="mini" onclick="renameCollection(\''+c.id+'\')">Rename</button><button class="mini danger" onclick="delCollection(\''+c.id+'\')">Delete</button></div></div>';
+      }).join(""):'<div class="adrow"><div></div><div class="sub">No collections yet.</div><div></div></div>')+
+    '</div></div>';
+  $("app").innerHTML=html;
+}
+function slugify(s){return s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"");}
+function addCollection(){
+  var name=$("nc_name").value.trim();if(!name){toast("Name required");return;}
+  sb.from("collections").insert({name:name,description:$("nc_desc").value.trim()||null,slug:slugify(name),sort_order:state.collections.length}).then(function(r){
+    if(r.error){toast(r.error.message);return;}
+    sb.from("collections").select("*").order("sort_order").then(function(rr){state.collections=rr.data||[];manageCollections();toast("Added");});
+  });
+}
+function renameCollection(id){var c=null;state.collections.forEach(function(x){if(x.id===id)c=x;});var n=prompt("Collection name",c?c.name:"");if(n==null)return;sb.from("collections").update({name:n.trim(),slug:slugify(n)}).eq("id",id).then(function(){loadAdmin().then(manageCollections);});}
+function delCollection(id){if(!confirm("Delete this collection? Works stay, but lose their collection tag."))return;sb.from("collections").delete().eq("id",id).then(function(){loadAdmin().then(manageCollections);});}
+
+/* ---------- boot ---------- */
+function boot(){
+  if(!configured){setBanner('Demo mode — add your <b>Supabase URL + anon key</b> in this file to go live. See SETUP.md.');renderUnconfigured();return;}
+  if(location.hash.indexOf("#admin")===0){state.view="admin";renderAdmin();}
+  else if(location.hash.indexOf("#art/")===0){loadPublic().then(function(){openShowcase(location.hash.slice(5));});}
+  else{loadPublic();}
+  if(sb)sb.auth.onAuthStateChange(function(_e,s){state.session=s;});
+}
+boot();
+</script>
+</body>
+</html>
