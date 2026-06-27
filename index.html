@@ -48,6 +48,10 @@ img{display:block;max-width:100%;}
 .search-mini{display:flex;align-items:center;gap:8px;border:1px solid var(--border);border-radius:2px;padding:0 12px;height:38px;}
 .search-mini input{background:none;border:0;outline:0;color:var(--text);font-family:inherit;font-size:14px;width:150px;}
 .search-mini input::placeholder{color:var(--slate);}
+.studio-btn{background:none;border:1px solid var(--vermilion);color:var(--vermilion);font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;height:38px;padding:0 16px;border-radius:2px;display:flex;align-items:center;gap:7px;white-space:nowrap;transition:.2s;}
+.studio-btn:hover{background:var(--vermilion);color:var(--wall);}
+.studio-btn .dot{width:7px;height:7px;border-radius:50%;background:var(--vermilion);}
+.studio-btn:hover .dot{background:var(--wall);}
 
 /* ---------- page intro ---------- */
 .intro{padding:60px 0 26px;}
@@ -241,7 +245,7 @@ img{display:block;max-width:100%;}
       <input id="search" type="search" placeholder="Search works" oninput="onSearch(this.value)" />
     </div>
     <button class="icon-btn" id="themeBtn" title="Toggle light / dark" onclick="toggleTheme()">◐</button>
-    <button class="icon-btn" title="Studio" onclick="go('admin')">✦</button>
+    <button class="studio-btn" title="Sign in to the studio" onclick="go('admin')"><span class="dot"></span>Studio</button>
   </div>
 </header>
 
