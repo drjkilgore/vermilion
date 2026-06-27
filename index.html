@@ -606,9 +606,13 @@ function editArtwork(id){
     '<div class="field full"><label>Images — first is the cover. Mark close-ups as “detail”.</label>'+
       '<div class="uploader" id="drop" onclick="$(\'fileInput\').click()">Drag photos here, or click to choose. JPG / PNG / WEBP.</div>'+
       '<input id="fileInput" type="file" accept="image/*" multiple style="display:none" onchange="addFiles(this.files)"/>'+
-      '<div class="thumbs" id="thumbs"></div></div>'+
+      '<div class="thumbs" id="thumbs"></div>'+
+      '<div style="margin-top:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">'+
+        '<button class="btn red" type="button" id="aiBtn" onclick="aiDraft()">✦ Draft everything with AI</button>'+
+        '<span style="font-size:12px;color:var(--slate)">Reads the cover photo + any details entered. Fills blank fields only.</span>'+
+      '</div></div>'+
     '<div class="form-grid">'+
-      '<div class="field full">'+inpRaw("f_title","Title *",a.title)+'</div>'+
+      '<div class="field full">'+inpRaw("f_title","Title *",a.title)+'<div id="title_sugg" class="tags-row" style="margin-top:8px"></div></div>'+
       '<div class="field"><label>Collection</label><select id="f_collection">'+colOpts+'</select></div>'+
       inp("f_medium","Medium",a.medium,"text","Oil on linen")+
       inp("f_dimensions","Dimensions (text)",a.dimensions,"text","36 x 48 in")+
@@ -641,6 +645,64 @@ function inpRaw(id,label,val){return '<label>'+label+'</label><input id="'+id+'"
 function availOpts(v){return ["available","reserved","sold"].map(function(o){return '<option value="'+o+'"'+(v===o?" selected":"")+'>'+o.charAt(0).toUpperCase()+o.slice(1)+'</option>';}).join("");}
 function colorPickHtml(){return COLORS.map(function(c){var on=formColors.indexOf(c[0])>-1;return '<div class="c'+(on?" on":"")+'" onclick="toggleFormColor(\''+c[0]+'\')"><span class="dot" style="background:'+c[1]+'"></span>'+c[0]+'</div>';}).join("");}
 function toggleFormColor(c){var i=formColors.indexOf(c);if(i===-1)formColors.push(c);else formColors.splice(i,1);$("colorpick").innerHTML=colorPickHtml();}
+
+/* ----- AI text studio (vision draft) ----- */
+var lastTitles=[];
+function aiBtnBusy(b){var x=$("aiBtn");if(!x)return;x.disabled=b;x.innerHTML=b?'<span class="spin"></span> Drafting…':'✦ Draft everything with AI';}
+function coverBlob(){
+  var cover=formImgs.filter(function(x){return x.is_primary;})[0]||formImgs[0];
+  if(!cover)return Promise.reject(new Error("Add a photo first."));
+  if(cover.file)return Promise.resolve(cover.file);
+  return fetch(cover.url).then(function(r){if(!r.ok)throw new Error("Could not load the photo.");return r.blob();});
+}
+function blobToScaledB64(blob){
+  return new Promise(function(res,rej){
+    var url=URL.createObjectURL(blob);var img=new Image();
+    img.onload=function(){
+      var max=1024,w=img.width,h=img.height;
+      if(w>h&&w>max){h=Math.round(h*max/w);w=max;}else if(h>=w&&h>max){w=Math.round(w*max/h);h=max;}
+      var c=document.createElement("canvas");c.width=w;c.height=h;
+      c.getContext("2d").drawImage(img,0,0,w,h);URL.revokeObjectURL(url);
+      try{var d=c.toDataURL("image/jpeg",0.85);res({media_type:"image/jpeg",data:d.split(",")[1]});}
+      catch(e){rej(new Error("Could not read the photo. Re-upload it and try again."));}
+    };
+    img.onerror=function(){URL.revokeObjectURL(url);rej(new Error("Image load failed."));};
+    img.src=url;
+  });
+}
+function aiDraft(){
+  aiBtnBusy(true);
+  coverBlob().then(blobToScaledB64).then(function(image){
+    var details={title:val("f_title"),medium:val("f_medium"),dimensions:val("f_dimensions"),
+      year:val("f_year"),subject:val("f_subject"),category:val("f_category"),
+      price:val("f_price"),framed:$("f_framed")?$("f_framed").value:""};
+    return fetch("/.netlify/functions/draft",{method:"POST",headers:{"content-type":"application/json"},
+      body:JSON.stringify({image:image,details:details})});
+  }).then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});}).then(function(o){
+    if(!o.ok||!o.j||!o.j.ok)throw new Error((o.j&&o.j.error)||"AI request failed.");
+    applyDraft(o.j.data);toast("Draft ready — review and edit.");
+  }).catch(function(e){toast("AI: "+(e.message||"failed"));}).then(function(){aiBtnBusy(false);});
+}
+function fillIfEmpty(id,v){var e=$(id);if(e&&v!=null&&String(v).trim()&&!e.value.trim())e.value=String(v);}
+function applyDraft(d){
+  if(!d)return;
+  fillIfEmpty("f_description",d.description);
+  fillIfEmpty("f_story",d.story);
+  fillIfEmpty("f_inspiration",d.inspiration);
+  fillIfEmpty("f_subject",d.subject);
+  fillIfEmpty("f_category",d.category);
+  fillIfEmpty("f_medium",d.medium);
+  if(d.tags&&d.tags.length&&!val("f_tags"))$("f_tags").value=d.tags.join(", ");
+  if(d.colors&&d.colors.length&&!formColors.length){formColors=d.colors.filter(function(c){return colorHex[c];});$("colorpick").innerHTML=colorPickHtml();}
+  if(d.titles&&d.titles.length){
+    lastTitles=d.titles;
+    if(!val("f_title"))$("f_title").value=d.titles[0];
+    var sg=$("title_sugg");
+    if(sg)sg.innerHTML='<span style="color:var(--slate);border:0;padding:0 4px 0 0">Ideas:</span>'+
+      d.titles.map(function(t,i){return '<span style="cursor:pointer" onclick="useTitle('+i+')">'+esc(t)+'</span>';}).join("");
+  }
+}
+function useTitle(i){var e=$("f_title");if(e&&lastTitles[i]!=null)e.value=lastTitles[i];}
 
 function wireDrop(){var d=$("drop");if(!d)return;
   ["dragenter","dragover"].forEach(function(ev){d.addEventListener(ev,function(e){e.preventDefault();d.classList.add("drag");});});
