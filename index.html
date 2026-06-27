@@ -221,12 +221,13 @@ img{display:block;max-width:100%;}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--wall);padding:12px 22px;border-radius:2px;font-size:13px;letter-spacing:.04em;z-index:80;box-shadow:0 12px 40px rgba(0,0,0,.3);}
 .modal-bg{position:fixed;inset:0;z-index:90;background:rgba(28,23,20,.55);display:flex;align-items:center;justify-content:center;padding:20px;}
 .modal-card{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:24px;max-width:340px;width:100%;}
-.slideshow{position:fixed;inset:0;z-index:70;background:#0d0b0a;display:flex;align-items:center;justify-content:center;}
-.slideshow img{max-width:92%;max-height:82%;object-fit:contain;box-shadow:0 40px 120px rgba(0,0,0,.6);}
-.slide-meta{position:absolute;left:0;right:0;bottom:54px;text-align:center;color:#fff;padding:0 20px;}
-.slide-meta .st{font-family:var(--serif);font-size:clamp(24px,4vw,38px);}
-.slide-meta .ss{font-size:13px;letter-spacing:.06em;color:#cabfb2;margin-top:6px;}
-.slide-ctrl{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);display:flex;gap:10px;}
+.slideshow{position:fixed;inset:0;z-index:70;background:#0d0b0a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:64px 20px 28px;}
+.slide-stage{flex:1;min-height:0;width:100%;display:flex;align-items:center;justify-content:center;}
+.slideshow img{max-width:92%;max-height:100%;object-fit:contain;box-shadow:0 40px 120px rgba(0,0,0,.6);}
+.slide-meta{flex:0 0 auto;text-align:center;color:#fff;padding:0 20px;}
+.slide-meta .st{font-family:var(--serif);font-size:clamp(22px,4vw,36px);line-height:1.1;}
+.slide-meta .ss{font-size:13px;letter-spacing:.04em;color:#cabfb2;margin-top:6px;}
+.slide-ctrl{flex:0 0 auto;display:flex;gap:10px;}
 .slide-ctrl button,.slide-exit{width:42px;height:42px;border-radius:50%;background:rgba(251,247,241,.12);color:#fff;border:0;font-size:16px;}
 .slide-ctrl button:hover,.slide-exit:hover{background:rgba(251,247,241,.24);}
 .slide-exit{position:absolute;top:18px;right:18px;font-size:18px;}
@@ -859,7 +860,7 @@ function endSlideshow(){clearInterval(slideTimer);slideTimer=null;$("overlay").i
 function paintSlide(){
   var a=slidePool[slideIdx];if(!a)return;
   $("overlay").innerHTML='<div class="slideshow">'+
-    '<img src="'+esc(primaryUrl(a))+'" alt="'+esc(a.title)+'"/>'+
+    '<div class="slide-stage"><img src="'+esc(primaryUrl(a))+'" alt="'+esc(a.title)+'"/></div>'+
     '<div class="slide-meta"><div class="st">'+esc(a.title)+'</div>'+
       '<div class="ss">'+esc([a.collections?a.collections.name:"",a.medium,a.price?money(a.price,a.currency):""].filter(Boolean).join("  ·  "))+'</div></div>'+
     '<div class="slide-ctrl" id="slideCtrl"></div>'+
