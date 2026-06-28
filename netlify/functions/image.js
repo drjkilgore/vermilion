@@ -23,6 +23,7 @@ exports.handler = async (event) => {
     if (mask) form.append("mask", new Blob([Buffer.from(mask, "base64")], { type: "image/png" }), "mask.png");
     form.append("prompt", prompt);
     form.append("size", size || "1024x1024");
+    form.append("moderation", "low");
     form.append("n", "1");
 
     const r = await fetch("https://api.openai.com/v1/images/edits", {
