@@ -321,7 +321,7 @@ img{display:block;max-width:100%;}
    ============================================================ */
 var SUPABASE_URL  = "https://msojmpxesbyegbxloday.supabase.co";
 var SUPABASE_ANON_KEY = "sb_publishable_TxLbSRQcbklkSZRHIY7m1A_Y_bcDixZ";
-var ARTIST_EMAIL  = "barbara@example.com";   // where "Inquire" messages go — change to Barbara's real inbox
+var ARTIST_EMAIL  = "bkyear2004@yahoo.com";   // where "Email" messages go
 var ARTIST_INTRO  = "A catalogue of original works. Each piece is one of a kind.";
 var ARTIST_NAME   = "Barbara";
 var ARTIST_PHOTO  = "barbara-portrait.jpg";   // add this image file to your repo root
@@ -589,7 +589,6 @@ function paintShowcase(){
           (a.price?'<div class="sc-price">'+money(a.price,a.currency)+'</div>':'')+
           '<span class="tag '+a.availability+'" style="margin-bottom:16px;display:inline-block">'+a.availability+'</span><br/>'+
           '<button class="btn red" type="button" onclick="showInquiry(\''+a.id+'\')">Inquire</button> '+
-          '<a class="btn" href="'+mailto+'">Email</a> '+
           '<button class="btn" type="button" onclick="qrFor(\''+a.id+'\')">QR code</button>'+
           tags+
         '</div>'+
