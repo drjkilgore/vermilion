@@ -739,6 +739,7 @@ function editArtwork(id){
         '<div class="bgtool"><div class="bgtool-h">Generative background &nbsp;·&nbsp; AI &nbsp;·&nbsp; art protected — compare to your original</div>'+
           '<div class="bgtool-row"><input id="genPrompt" placeholder="describe a background: deep charcoal gallery wall, soft spotlight"/>'+
             '<button class="btn" type="button" id="genBtn" onclick="aiGenBg()">Generate background</button></div></div>'+
+        '<div id="bgStatus" style="font-size:12.5px;color:var(--vermilion);margin-top:4px"></div>'+
       '</div></div>'+
     '<div class="form-grid">'+
       '<div class="field full">'+inpRaw("f_title","Title *",a.title)+'<div id="title_sugg" class="tags-row" style="margin-top:8px"></div></div>'+
@@ -888,8 +889,8 @@ function prepForAI(mode){
       var th=S*0.5, sc=th/cut.height, dw=cut.width*sc, dh=cut.height*sc, dx=(S-dw)/2, dy=S*0.16;
       ic.drawImage(cut,dx,dy,dw,dh); mc.drawImage(cut,dx,dy,dw,dh);
     }else{
-      var r=Math.min(S/photo.width,S/photo.height)*0.9, dw=photo.width*r, dh=photo.height*r, dx=(S-dw)/2, dy=(S-dh)/2;
-      ic.drawImage(photo,dx,dy,dw,dh); mc.drawImage(cut,dx,dy,dw,dh);
+      var r=Math.min(S/cut.width,S/cut.height)*0.74, dw=cut.width*r, dh=cut.height*r, dx=(S-dw)/2, dy=(S-dh)/2;
+      ic.drawImage(cut,dx,dy,dw,dh); mc.drawImage(cut,dx,dy,dw,dh);
     }
     URL.revokeObjectURL(arr[0].url);URL.revokeObjectURL(arr[1].url);
     return {image:imgC.toDataURL("image/png").split(",")[1], mask:mC.toDataURL("image/png").split(",")[1]};
@@ -910,6 +911,7 @@ function aiGenBg(){
 function runImageAI(mode,prompt,btnId,busy,label){
   if(!window.removeBg){toast("Image tool is still loading — try again in a few seconds.");return;}
   var btn=$(btnId);if(btn){btn.disabled=true;btn.innerHTML='<span class="spin"></span> '+busy;}
+  bgStatus("");
   function done(){if(btn){btn.disabled=false;btn.innerHTML=label;}}
   prepForAI(mode).then(function(p){
     return fetch("/.netlify/functions/image",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({image:p.image,mask:p.mask,prompt:prompt,size:"1024x1024"})});
@@ -921,8 +923,9 @@ function runImageAI(mode,prompt,btnId,busy,label){
     formImgs.forEach(function(x){x.is_primary=false;});
     formImgs.unshift({url:URL.createObjectURL(blob),file:f,is_primary:true,is_detail:false,caption:"",sort_order:0});
     paintThumbs();toast(label+" ready — new cover added, original kept.");done();
-  }).catch(function(e){toast(label+": "+(e.message||"failed"));done();});
+  }).catch(function(e){var m=(e&&e.message)||"failed";console.error("ImageAI",e);bgStatus(label+" failed: "+m);toast(label+": "+m);done();});
 }
+function bgStatus(msg){var e=$("bgStatus");if(e)e.textContent=msg||"";}
 
 /* ----- QR codes ----- */
 function qrFor(id){var a=byId(id);var base=location.origin+location.pathname;showQR(base+"#art/"+id,a?a.title:"");}
