@@ -231,6 +231,14 @@ img{display:block;max-width:100%;}
 .colorpick .c{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;border:1px solid var(--border);padding:5px 9px;border-radius:20px;}
 .colorpick .c.on{border-color:var(--vermilion);color:var(--vermilion);}
 .colorpick .dot{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.2);}
+.bgtools{margin-top:14px;display:flex;flex-direction:column;gap:10px;}
+.bgtool{border:1px solid var(--border);border-radius:2px;padding:12px 14px;background:var(--surface);}
+.bgtool-h{font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--slate);margin-bottom:10px;}
+.bgtool-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;}
+.bgtool-row:first-of-type{margin-top:0;}
+.bgtool-row select,.bgtool-row input{flex:1 1 200px;min-width:0;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:inherit;font-size:13px;padding:9px 11px;border-radius:2px;outline:0;}
+.bgtool-row input:focus,.bgtool-row select:focus{border-color:var(--vermilion);}
+.bgtool-row .btn{flex:0 0 auto;}
 .form-actions{display:flex;gap:12px;justify-content:flex-end;margin-top:24px;flex-wrap:wrap;}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--wall);padding:12px 22px;border-radius:2px;font-size:13px;letter-spacing:.04em;z-index:80;box-shadow:0 12px 40px rgba(0,0,0,.3);}
 .modal-bg{position:fixed;inset:0;z-index:90;background:rgba(28,23,20,.55);display:flex;align-items:center;justify-content:center;padding:20px;}
@@ -712,13 +720,25 @@ function editArtwork(id){
         '<button class="btn red" type="button" id="aiBtn" onclick="aiDraft()">✦ Draft everything with AI</button>'+
         '<span style="font-size:12px;color:var(--slate)">Reads the cover photo + any details entered. Fills blank fields only.</span>'+
       '</div>'+
-      '<div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'+
-        '<label style="font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--slate)">AI background</label>'+
-        '<select id="bgStyle" style="background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:13px;padding:8px 10px;border-radius:2px">'+
-          '<option value="white">Gallery white</option><option value="gray">Soft gray</option><option value="studio">Studio gradient</option><option value="warm">Warm gallery</option>'+
-        '</select>'+
-        '<button class="btn" type="button" id="bgBtn" onclick="applyBackground()">Clean up background</button>'+
-        '<span style="font-size:12px;color:var(--slate)">Places the piece on a clean backdrop. Your original is always kept.</span>'+
+      '<div class="bgtools">'+
+        '<div class="bgtool"><div class="bgtool-h">Clean backdrop &nbsp;·&nbsp; free &nbsp;·&nbsp; keeps art exact</div>'+
+          '<div class="bgtool-row">'+
+            '<select id="bgStyle"><option value="white">Gallery white</option><option value="gray">Soft gray</option><option value="studio">Studio gradient</option><option value="warm">Warm gallery</option></select>'+
+            '<button class="btn" type="button" id="bgBtn" onclick="applyBackground()">Clean up background</button></div></div>'+
+        '<div class="bgtool"><div class="bgtool-h">Stage in a room &nbsp;·&nbsp; AI &nbsp;·&nbsp; keeps art exact</div>'+
+          '<div class="bgtool-row">'+
+            '<select id="roomPreset"><option value="">— choose a room —</option>'+
+              '<option value="a bright modern living room, above a sofa">Living room</option>'+
+              '<option value="a clean white contemporary art gallery with soft museum lighting">Gallery</option>'+
+              '<option value="a sophisticated executive office with warm wood tones">Office</option>'+
+              '<option value="a serene minimalist bedroom, above the headboard">Bedroom</option>'+
+              '<option value="an upscale dining room feature wall">Dining room</option>'+
+              '<option value="a bright modern commercial lobby">Commercial space</option></select></div>'+
+          '<div class="bgtool-row"><input id="roomPrompt" placeholder="…or type a scene: sunlit loft with plants"/>'+
+            '<button class="btn" type="button" id="roomBtn" onclick="aiRoom()">Stage in a room</button></div></div>'+
+        '<div class="bgtool"><div class="bgtool-h">Generative background &nbsp;·&nbsp; AI &nbsp;·&nbsp; art protected — compare to your original</div>'+
+          '<div class="bgtool-row"><input id="genPrompt" placeholder="describe a background: deep charcoal gallery wall, soft spotlight"/>'+
+            '<button class="btn" type="button" id="genBtn" onclick="aiGenBg()">Generate background</button></div></div>'+
       '</div></div>'+
     '<div class="form-grid">'+
       '<div class="field full">'+inpRaw("f_title","Title *",a.title)+'<div id="title_sugg" class="tags-row" style="margin-top:8px"></div></div>'+
@@ -854,6 +874,54 @@ function applyBackground(){
       paintThumbs();bgBusy(false);toast("Background applied as new cover — original kept below.");
     },"image/jpeg",0.92);
   }).catch(function(e){bgBusy(false);toast("Background: "+(e.message||"failed"));});
+}
+
+/* ----- AI room staging & generative background (OpenAI, art mask-protected) ----- */
+function prepForAI(mode){
+  return coverBlob().then(function(b){return scaleBlob(b,1200);}).then(function(small){
+    return Promise.all([blobToImage(small), window.removeBg(small).then(blobToImage)]);
+  }).then(function(arr){
+    var photo=arr[0].img, cut=arr[1].img, S=1024;
+    var imgC=document.createElement("canvas");imgC.width=S;imgC.height=S;var ic=imgC.getContext("2d");
+    var mC=document.createElement("canvas");mC.width=S;mC.height=S;var mc=mC.getContext("2d");
+    if(mode==="room"){
+      var th=S*0.5, sc=th/cut.height, dw=cut.width*sc, dh=cut.height*sc, dx=(S-dw)/2, dy=S*0.16;
+      ic.drawImage(cut,dx,dy,dw,dh); mc.drawImage(cut,dx,dy,dw,dh);
+    }else{
+      var r=Math.min(S/photo.width,S/photo.height)*0.9, dw=photo.width*r, dh=photo.height*r, dx=(S-dw)/2, dy=(S-dh)/2;
+      ic.drawImage(photo,dx,dy,dw,dh); mc.drawImage(cut,dx,dy,dw,dh);
+    }
+    URL.revokeObjectURL(arr[0].url);URL.revokeObjectURL(arr[1].url);
+    return {image:imgC.toDataURL("image/png").split(",")[1], mask:mC.toDataURL("image/png").split(",")[1]};
+  });
+}
+function aiRoom(){
+  var scene=($("roomPrompt")&&$("roomPrompt").value.trim())||($("roomPreset")&&$("roomPreset").value)||"";
+  if(!scene){toast("Pick a room or type a scene.");return;}
+  var prompt="Place this artwork as a framed piece hanging on the wall of "+scene+". Photorealistic interior with correct perspective and soft, realistic lighting and shadows. Do not alter, recolor, crop, or repaint the artwork itself.";
+  runImageAI("room",prompt,"roomBtn","Staging…","Stage in a room");
+}
+function aiGenBg(){
+  var desc=($("genPrompt")&&$("genPrompt").value.trim())||"";
+  if(!desc){toast("Describe the background you want.");return;}
+  var prompt="Replace only the background behind the artwork with: "+desc+". Keep the artwork itself completely unchanged and untouched. Seamless, photorealistic, gallery quality.";
+  runImageAI("genbg",prompt,"genBtn","Generating…","Generate background");
+}
+function runImageAI(mode,prompt,btnId,busy,label){
+  if(!window.removeBg){toast("Image tool is still loading — try again in a few seconds.");return;}
+  var btn=$(btnId);if(btn){btn.disabled=true;btn.innerHTML='<span class="spin"></span> '+busy;}
+  function done(){if(btn){btn.disabled=false;btn.innerHTML=label;}}
+  prepForAI(mode).then(function(p){
+    return fetch("/.netlify/functions/image",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({image:p.image,mask:p.mask,prompt:prompt,size:"1024x1024"})});
+  }).then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});}).then(function(o){
+    if(!o.ok||!o.j||!o.j.ok)throw new Error((o.j&&o.j.error)||"request failed");
+    return fetch("data:image/png;base64,"+o.j.image).then(function(r){return r.blob();});
+  }).then(function(blob){
+    var f=new File([blob],"vermilion-"+mode+".png",{type:"image/png"});
+    formImgs.forEach(function(x){x.is_primary=false;});
+    formImgs.unshift({url:URL.createObjectURL(blob),file:f,is_primary:true,is_detail:false,caption:"",sort_order:0});
+    paintThumbs();toast(label+" ready — new cover added, original kept.");done();
+  }).catch(function(e){toast(label+": "+(e.message||"failed"));done();});
 }
 
 /* ----- QR codes ----- */
