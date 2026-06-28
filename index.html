@@ -136,6 +136,20 @@ img{display:block;max-width:100%;}
 .about .about-meta{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--slate);border-top:1px solid var(--border);padding-top:16px;margin-top:10px;}
 @media(max-width:880px){.about{grid-template-columns:1fr;gap:30px;padding-top:36px;}}
 
+/* ---------- how-to guide ---------- */
+.guide-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:28px;align-items:start;padding-bottom:80px;}
+.acc{border:1px solid var(--border);border-radius:2px;margin-bottom:10px;overflow:hidden;}
+.acc-h{width:100%;display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--surface);border:0;color:var(--text);font-family:var(--serif);font-size:18px;text-align:left;padding:15px 18px;cursor:pointer;}
+.acc-h:hover{color:var(--vermilion);}
+.acc-x{font-family:var(--sans);color:var(--vermilion);font-size:20px;line-height:1;}
+.acc-b{padding:2px 18px 16px;}
+.acc-b ol{margin:0;padding-left:20px;}
+.acc-b li{font-size:14px;line-height:1.6;color:var(--muted);margin-bottom:6px;}
+.guide-side{background:var(--surface);border:1px solid var(--border);border-radius:2px;padding:20px;position:sticky;top:88px;}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:14px;margin-bottom:13px;cursor:pointer;}
+.chk input{margin-top:3px;accent-color:var(--vermilion);width:16px;height:16px;flex:0 0 auto;}
+@media(max-width:880px){.guide-grid{grid-template-columns:1fr;}.guide-side{position:static;}}
+
 /* ---------- showcase overlay ---------- */
 .showcase{position:fixed;inset:0;z-index:60;background:var(--bg);display:flex;flex-direction:column;}
 .sc-bar{display:flex;align-items:center;gap:14px;height:64px;padding:0 24px;border-bottom:1px solid var(--border);}
@@ -295,6 +309,7 @@ img{display:block;max-width:100%;}
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script type="module">
   import { removeBackground } from "https://esm.sh/@imgly/background-removal";
   window.removeBg = removeBackground;
@@ -329,7 +344,7 @@ var configured = SUPABASE_URL.indexOf("YOUR-PROJECT")===-1 && SUPABASE_ANON_KEY.
 var sb = configured ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 var state = {
-  view:"gallery", artworks:[], collections:[], session:null, about:null,
+  view:"gallery", artworks:[], collections:[], session:null, about:null, inquiries:[],
   filters:{q:"",collection:"",availability:"",medium:"",subject:"",size:"",year:"",pmin:"",pmax:"",colors:[]},
   activeCollection:null
 };
@@ -383,8 +398,9 @@ function loadPublic(){
 function loadAdmin(){
   return Promise.all([
     sb.from("artworks").select("*, artwork_images(*), collections(name)").order("updated_at",{ascending:false}),
-    sb.from("collections").select("*").order("sort_order",{ascending:true})
-  ]).then(function(r){state.artworks=(r[0].data||[]);state.collections=(r[1].data||[]);renderAdminList();});
+    sb.from("collections").select("*").order("sort_order",{ascending:true}),
+    sb.from("inquiries").select("*").order("created_at",{ascending:false})
+  ]).then(function(r){state.artworks=(r[0].data||[]);state.collections=(r[1].data||[]);state.inquiries=(r[2]&&r[2].data)||[];renderAdminList();});
 }
 
 /* ---------- filtering ---------- */
@@ -572,8 +588,8 @@ function paintShowcase(){
           blocks+
           (a.price?'<div class="sc-price">'+money(a.price,a.currency)+'</div>':'')+
           '<span class="tag '+a.availability+'" style="margin-bottom:16px;display:inline-block">'+a.availability+'</span><br/>'+
-          '<a class="btn red" href="'+mailto+'">Inquire</a> '+
-          '<a class="btn" href="'+mailto+'">Request details</a> '+
+          '<button class="btn red" type="button" onclick="showInquiry(\''+a.id+'\')">Inquire</button> '+
+          '<a class="btn" href="'+mailto+'">Email</a> '+
           '<button class="btn" type="button" onclick="qrFor(\''+a.id+'\')">QR code</button>'+
           tags+
         '</div>'+
@@ -632,8 +648,12 @@ function renderAdminList(){
   var sold=a.filter(function(x){return x.availability==="sold";}).length;
   var resv=a.filter(function(x){return x.availability==="reserved";}).length;
   var views=a.reduce(function(s,x){return s+(x.views||0);},0);
+  var newInq=(state.inquiries||[]).filter(function(x){return x.status==="new";}).length;
   var html='<div class="wrap admin fade">'+
     '<div class="admin-head"><h1>Studio</h1><div class="spacer" style="flex:1"></div>'+
+      '<button class="mini" onclick="renderGuide()">How-to</button>'+
+      '<button class="mini" onclick="loadInquiries()">Inquiries'+(newInq?' ('+newInq+')':'')+'</button>'+
+      '<button class="mini" onclick="buildLookbook()">Lookbook</button>'+
       '<button class="mini" onclick="editAbout()">About page</button>'+
       '<button class="mini" onclick="manageCollections()">Collections</button>'+
       '<button class="mini" onclick="logout()">Sign out</button></div>'+
@@ -1045,6 +1065,124 @@ function saveAbout(){
   .catch(function(e){btn.disabled=false;btn.innerHTML="Save about page";toast("Error: "+(e.message||"save failed"));});
 }
 
+/* ----- inquiries (public form + studio inbox) ----- */
+function showInquiry(id){
+  var a=byId(id);var title=a?a.title:"";
+  $("modal").innerHTML='<div class="modal-bg" onclick="closeModal(event)"><div class="modal-card">'+
+    '<div class="cap" style="color:var(--slate);margin-bottom:4px">Inquire</div>'+
+    '<div style="font-family:var(--serif);font-size:22px;margin-bottom:14px">'+esc(title||"Contact the artist")+'</div>'+
+    '<div class="field"><label>Your name</label><input id="iq_name"/></div>'+
+    '<div class="field"><label>Email</label><input id="iq_email" type="email"/></div>'+
+    '<div class="field"><label>Message</label><textarea id="iq_msg">'+esc(title?('I would love to know more about "'+title+'".'):'')+'</textarea></div>'+
+    '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">'+
+      '<button class="btn" onclick="closeModal()">Cancel</button>'+
+      '<button class="btn red" id="iqSend" onclick="submitInquiry(\''+(id||"")+'\')">Send</button>'+
+    '</div></div></div>';
+}
+function submitInquiry(id){
+  var name=$("iq_name").value.trim(),email=$("iq_email").value.trim(),msg=$("iq_msg").value.trim();
+  if(!name||!email){toast("Please add your name and email.");return;}
+  var btn=$("iqSend");btn.disabled=true;btn.innerHTML='<span class="spin"></span>';
+  var a=byId(id);
+  sb.from("inquiries").insert({artwork_id:id||null,artwork_title:a?a.title:null,name:name,email:email,message:msg||null}).then(function(r){
+    if(r.error){btn.disabled=false;btn.innerHTML="Send";toast(r.error.message);return;}
+    $("modal").innerHTML="";toast("Sent — Barbara will be in touch.");
+  });
+}
+function loadInquiries(){return sb.from("inquiries").select("*").order("created_at",{ascending:false}).then(function(r){state.inquiries=r.data||[];renderInquiries();});}
+function renderInquiries(){
+  var list=state.inquiries||[];
+  var html='<div class="wrap admin fade"><div class="admin-head"><h1>Inquiries</h1><div class="spacer" style="flex:1"></div><button class="mini" onclick="loadAdmin()">← Back</button></div>';
+  if(!list.length){html+='<div class="empty"><h2>No inquiries yet</h2><p>Messages from collectors will appear here.</p></div>';}
+  else{
+    html+='<div class="adlist">'+list.map(function(q){
+      var date=new Date(q.created_at).toLocaleDateString(undefined,{month:"short",day:"numeric",year:"numeric"});
+      return '<div class="adrow" style="grid-template-columns:1fr auto">'+
+        '<div><div class="ti" style="font-size:17px">'+esc(q.name)+(q.status==="new"?' <span class="pill" style="color:var(--lacquer);border-color:rgba(224,48,30,.4)">new</span>':'')+'</div>'+
+        '<div class="sub"><a href="mailto:'+esc(q.email)+'?subject='+encodeURIComponent('Re: '+(q.artwork_title||'your inquiry'))+'" style="color:var(--lacquer)">'+esc(q.email)+'</a>'+(q.artwork_title?' · '+esc(q.artwork_title):'')+' · '+date+'</div>'+
+        (q.message?'<div style="font-size:14px;margin-top:8px;white-space:pre-wrap">'+esc(q.message)+'</div>':'')+'</div>'+
+        '<div class="acts">'+(q.status==="new"?'<button class="mini" onclick="markInquiry(\''+q.id+'\')">Mark read</button>':'')+'<button class="mini danger" onclick="delInquiry(\''+q.id+'\')">Delete</button></div>'+
+      '</div>';
+    }).join("")+'</div>';
+  }
+  $("app").innerHTML=html+'</div>';
+}
+function markInquiry(id){sb.from("inquiries").update({status:"read"}).eq("id",id).then(loadInquiries);}
+function delInquiry(id){if(!confirm("Delete this inquiry?"))return;sb.from("inquiries").delete().eq("id",id).then(loadInquiries);}
+
+/* ----- lookbook PDF ----- */
+function buildLookbook(){
+  if(!window.jspdf){toast("PDF tool is still loading — try again in a moment.");return;}
+  var works=state.artworks.filter(function(a){return a.status==="published";});
+  if(!works.length){toast("Publish some works first.");return;}
+  toast("Building lookbook…");
+  var jsPDF=window.jspdf.jsPDF;var doc=new jsPDF({unit:"pt",format:"a4"});
+  var W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight();
+  doc.setFillColor(224,48,30);doc.rect(0,0,W,H,"F");
+  doc.setFillColor(251,247,241);doc.rect(W/2-26,H*0.33-26,52,52,"F");
+  doc.setTextColor(224,48,30);doc.setFont("times","normal");doc.setFontSize(34);doc.text("V",W/2,H*0.33+13,{align:"center"});
+  doc.setTextColor(251,247,241);doc.setFontSize(48);doc.text("VERMILION",W/2,H*0.33+96,{align:"center"});
+  doc.setFont("times","italic");doc.setFontSize(15);doc.text("Original works by Barbara",W/2,H*0.33+126,{align:"center"});
+  doc.setFont("helvetica","normal");doc.setFontSize(10);doc.text("barbkayeart.com",W/2,H-50,{align:"center"});
+  loadImagesForPdf(works).then(function(imgs){
+    works.forEach(function(a,i){
+      doc.addPage();var pad=54,maxW=W-pad*2,maxH=H*0.58,ty=pad+30;
+      var im=imgs[i];
+      if(im){var r=Math.min(maxW/im.w,maxH/im.h),dw=im.w*r,dh=im.h*r;doc.addImage(im.data,"JPEG",(W-dw)/2,pad,dw,dh);ty=pad+dh+34;}
+      doc.setTextColor(28,23,20);doc.setFont("times","normal");doc.setFontSize(26);doc.text(a.title||"Untitled",pad,ty);
+      doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(120,114,108);
+      var meta=[a.collections?a.collections.name:"",[a.medium,a.dimensions,a.year].filter(Boolean).join(" · ")].filter(Boolean).join("     ");
+      if(meta)doc.text(meta,pad,ty+18);
+      var line=ty+42;
+      if(a.price){doc.setFont("times","normal");doc.setFontSize(16);doc.setTextColor(176,22,10);doc.text(money(a.price,a.currency)+(a.availability!=="available"?"   ·   "+a.availability.charAt(0).toUpperCase()+a.availability.slice(1):""),pad,line);line+=24;}
+      if(a.description){doc.setFont("helvetica","normal");doc.setFontSize(11);doc.setTextColor(70,64,59);doc.text(doc.splitTextToSize(a.description,maxW),pad,line);}
+      doc.setFontSize(9);doc.setTextColor(150,144,138);doc.text("barbkayeart.com",pad,H-30);doc.text(String(i+1),W-pad,H-30,{align:"right"});
+    });
+    doc.save("Vermilion-Lookbook.pdf");toast("Lookbook ready.");
+  }).catch(function(e){toast("Lookbook: "+(e.message||"failed"));});
+}
+function loadImagesForPdf(works){
+  return Promise.all(works.map(function(a){
+    return fetch(primaryUrl(a)).then(function(r){return r.blob();}).then(function(b){
+      return new Promise(function(res){
+        var u=URL.createObjectURL(b),img=new Image();
+        img.onload=function(){var max=1400,w=img.width,h=img.height;if(Math.max(w,h)>max){if(w>=h){h=Math.round(h*max/w);w=max;}else{w=Math.round(w*max/h);h=max;}}
+          var c=document.createElement("canvas");c.width=w;c.height=h;c.getContext("2d").drawImage(img,0,0,w,h);URL.revokeObjectURL(u);
+          res({data:c.toDataURL("image/jpeg",0.85),w:w,h:h});};
+        img.onerror=function(){URL.revokeObjectURL(u);res(null);};img.src=u;
+      });
+    }).catch(function(){return null;});
+  }));
+}
+
+/* ----- interactive how-to guide ----- */
+var GUIDE=[
+  {q:"Add your first artwork",a:["From the studio, tap + New artwork.","Upload one or more photos — the first is the cover. Mark close-ups as Detail.","Fill in the title and any details you like.","Set Status to Published to make it live, then Save."]},
+  {q:"Let AI write it for you",a:["After uploading a photo, tap Draft everything with AI.","It reads the photo plus anything you have typed, and fills the description, story, tags, colours, and three title ideas.","It only fills blank fields, so your own words are never overwritten."]},
+  {q:"Clean up the background",a:["Pick a backdrop — gallery white, soft gray, studio, or warm — then tap Clean up background.","The piece is placed on a clean backdrop as a NEW cover photo. Your original is always kept below it.","Works best on well-lit, flat pieces; very textured or dark pieces may need a cleaner capture."]},
+  {q:"Draft vs Published",a:["Draft works are hidden from the public — use it to stage pieces before they go live.","Published works appear in the gallery immediately.","Tap the status button on any row to cycle Available → Reserved → Sold."]},
+  {q:"Organize into collections",a:["Tap Collections in the studio header.","Add a series, such as Studies in Red.","Assign a work to it from the Collection field when adding or editing the piece."]},
+  {q:"QR codes for shows and cards",a:["Tap QR on any artwork — in the studio list or on the public page.","Download the PNG and print it on placards, business cards, or signage.","Scanning it opens that exact piece on your site."]},
+  {q:"Slideshow / TV mode",a:["On the Gallery or Grid, tap ▶ Slideshow.","It plays full-screen — perfect on a TV during a show or event.","Filter first to show just one collection."]},
+  {q:"Edit your About page",a:["Tap About page in the studio header.","Update your name, portrait, and bio. Separate paragraphs with a blank line.","Save — the public About tab updates right away."]},
+  {q:"Read collector inquiries",a:["When someone taps Inquire on a piece, their message arrives in Inquiries.","Open Inquiries to read them; tap the email to reply.","Mark them read or delete when you are done."]},
+  {q:"Make a lookbook PDF",a:["Tap Lookbook in the studio.","It builds a branded PDF of all your published works.","Send it to a buyer, or print it as a catalogue."]}
+];
+var CHECK=["Add and publish your first artwork","Try Draft everything with AI","Create a collection","Edit your About page","Generate a lookbook PDF"];
+function getChecks(){try{return JSON.parse(localStorage.getItem("vermilion-checks")||"{}");}catch(e){return {};}}
+function toggleCheck(i){var c=getChecks();c[i]=!c[i];try{localStorage.setItem("vermilion-checks",JSON.stringify(c));}catch(e){}}
+function toggleGuide(i){window._guideOpen=window._guideOpen||{};window._guideOpen[i]=!window._guideOpen[i];renderGuide();}
+function renderGuide(){
+  var open=window._guideOpen||{},checks=getChecks();
+  var acc=GUIDE.map(function(s,i){var iso=open[i];
+    return '<div class="acc'+(iso?' open':'')+'"><button class="acc-h" onclick="toggleGuide('+i+')"><span>'+esc(s.q)+'</span><span class="acc-x">'+(iso?'–':'+')+'</span></button>'+
+      (iso?'<div class="acc-b"><ol>'+s.a.map(function(t){return '<li>'+esc(t)+'</li>';}).join("")+'</ol></div>':'')+'</div>';}).join("");
+  var cl=CHECK.map(function(t,i){return '<label class="chk"><input type="checkbox" '+(checks[i]?'checked':'')+' onchange="toggleCheck('+i+')"/> <span>'+esc(t)+'</span></label>';}).join("");
+  $("app").innerHTML='<div class="wrap admin fade"><div class="admin-head"><h1>How to use Vermilion</h1><div class="spacer" style="flex:1"></div><button class="mini" onclick="loadAdmin()">← Back</button></div>'+
+    '<div class="guide-grid"><div class="guide-acc">'+acc+'</div>'+
+    '<div class="guide-side"><div class="cap" style="color:var(--slate);margin-bottom:14px">Getting started</div>'+cl+'</div></div></div>';
+}
+
 /* ---------- boot ---------- */
 function boot(){
   if(!configured){setBanner('Demo mode — add your <b>Supabase URL + anon key</b> in this file to go live. See SETUP.md.');renderUnconfigured();return;}
@@ -1057,3 +1195,4 @@ boot();
 </script>
 </body>
 </html>
+
