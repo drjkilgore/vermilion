@@ -329,7 +329,7 @@ var configured = SUPABASE_URL.indexOf("YOUR-PROJECT")===-1 && SUPABASE_ANON_KEY.
 var sb = configured ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
 var state = {
-  view:"gallery", artworks:[], collections:[], session:null,
+  view:"gallery", artworks:[], collections:[], session:null, about:null,
   filters:{q:"",collection:"",availability:"",medium:"",subject:"",size:"",year:"",pmin:"",pmax:"",colors:[]},
   activeCollection:null
 };
@@ -371,9 +371,11 @@ function loadPublic(){
   if(!sb){renderUnconfigured();return Promise.resolve();}
   return Promise.all([
     sb.from("artworks").select("*, artwork_images(*), collections(name,slug)").eq("status","published").order("sort_order",{ascending:true}).order("created_at",{ascending:false}),
-    sb.from("collections").select("*").order("sort_order",{ascending:true})
+    sb.from("collections").select("*").order("sort_order",{ascending:true}),
+    sb.from("settings").select("value").eq("key","about").maybeSingle()
   ]).then(function(r){
     state.artworks=(r[0].data||[]); state.collections=(r[1].data||[]);
+    state.about=(r[2]&&r[2].data&&r[2].data.value)||null;
     if(r[0].error)console.warn(r[0].error);
     render();
   });
@@ -505,12 +507,16 @@ function renderCollections(){
 function openCollection(id){state.view="gallery";state.activeCollection=id;syncNav();renderListing();window.scrollTo(0,0);}
 
 function renderAbout(){
-  var ps=ARTIST_BIO.map(function(p){return '<p>'+esc(p)+'</p>';}).join("");
+  var cur=state.about||{};
+  var name=(cur.name!=null&&cur.name!=="")?cur.name:ARTIST_NAME;
+  var bioArr=(cur.bio&&cur.bio.length)?cur.bio:ARTIST_BIO;
+  var photo=cur.photo_url||ARTIST_PHOTO;
+  var ps=bioArr.map(function(p){return '<p>'+esc(p)+'</p>';}).join("");
   $("app").innerHTML='<div class="wrap"><div class="about fade">'+
-    '<div class="portrait"><img src="'+esc(ARTIST_PHOTO)+'" alt="'+esc(ARTIST_NAME)+'" onerror="this.style.display=\'none\'"/></div>'+
+    '<div class="portrait"><img src="'+esc(photo)+'" alt="'+esc(name)+'" onerror="this.style.display=\'none\'"/></div>'+
     '<div class="bio">'+
       '<p class="kick cap" style="color:var(--lacquer)">The artist</p>'+
-      '<h1>'+esc(ARTIST_NAME)+'</h1>'+
+      '<h1>'+esc(name)+'</h1>'+
       '<div class="bio-body">'+ps+'</div>'+
       '<div class="about-meta">Self-taught · University of Michigan</div>'+
       '<button class="btn red" style="margin-top:24px" onclick="go(\'gallery\')">View the gallery</button>'+
@@ -628,6 +634,7 @@ function renderAdminList(){
   var views=a.reduce(function(s,x){return s+(x.views||0);},0);
   var html='<div class="wrap admin fade">'+
     '<div class="admin-head"><h1>Studio</h1><div class="spacer" style="flex:1"></div>'+
+      '<button class="mini" onclick="editAbout()">About page</button>'+
       '<button class="mini" onclick="manageCollections()">Collections</button>'+
       '<button class="mini" onclick="logout()">Sign out</button></div>'+
     '<div class="stats">'+
@@ -991,6 +998,52 @@ function addCollection(){
 }
 function renameCollection(id){var c=null;state.collections.forEach(function(x){if(x.id===id)c=x;});var n=prompt("Collection name",c?c.name:"");if(n==null)return;sb.from("collections").update({name:n.trim(),slug:slugify(n)}).eq("id",id).then(function(){loadAdmin().then(manageCollections);});}
 function delCollection(id){if(!confirm("Delete this collection? Works stay, but lose their collection tag."))return;sb.from("collections").delete().eq("id",id).then(function(){loadAdmin().then(manageCollections);});}
+
+/* ----- About page editor ----- */
+var aboutPhotoFile=null;
+function editAbout(){
+  aboutPhotoFile=null;
+  var cur=state.about||{};
+  var name=(cur.name!=null&&cur.name!=="")?cur.name:ARTIST_NAME;
+  var bioText=((cur.bio&&cur.bio.length)?cur.bio:ARTIST_BIO).join("\n\n");
+  var photo=cur.photo_url||ARTIST_PHOTO;
+  $("app").innerHTML='<div class="wrap admin fade">'+
+    '<div class="admin-head"><h1>About page</h1><div class="spacer" style="flex:1"></div><button class="mini" onclick="loadAdmin()">← Back</button></div>'+
+    '<div class="form-grid" style="max-width:760px">'+
+      '<div class="field"><label>Artist name</label><input id="ab_name" value="'+esc(name)+'"/></div>'+
+      '<div class="field"><label>Portrait</label><div style="display:flex;gap:14px;align-items:center">'+
+        '<img id="ab_preview" src="'+esc(photo)+'" alt="" style="width:84px;height:84px;object-fit:cover;border:1px solid var(--border);border-radius:2px" onerror="this.style.visibility=\'hidden\'"/>'+
+        '<button class="mini" type="button" onclick="$(\'ab_file\').click()">Change photo</button>'+
+        '<input id="ab_file" type="file" accept="image/*" style="display:none" onchange="aboutPhotoPick(this.files)"/></div></div>'+
+      '<div class="field full"><label>Bio — separate paragraphs with a blank line</label><textarea id="ab_bio" style="min-height:240px">'+esc(bioText)+'</textarea></div>'+
+    '</div>'+
+    '<div class="form-actions"><button class="btn" onclick="loadAdmin()">Cancel</button><button class="btn red" id="abSave" onclick="saveAbout()">Save about page</button></div>'+
+  '</div>';
+}
+function aboutPhotoPick(files){if(!files||!files[0])return;aboutPhotoFile=files[0];var p=$("ab_preview");if(p){p.src=URL.createObjectURL(aboutPhotoFile);p.style.visibility="visible";}}
+function saveAbout(){
+  var btn=$("abSave");btn.disabled=true;btn.innerHTML='<span class="spin"></span>';
+  var name=$("ab_name").value.trim();
+  var bio=$("ab_bio").value.split(/\n\s*\n/).map(function(s){return s.trim();}).filter(Boolean);
+  var cur=state.about||{};
+  var photo_url=cur.photo_url||null;
+  var chain=Promise.resolve();
+  if(aboutPhotoFile){
+    chain=chain.then(function(){
+      var ext=(aboutPhotoFile.name.split(".").pop()||"jpg").toLowerCase();
+      var path="about/portrait-"+(crypto.randomUUID?crypto.randomUUID():Date.now())+"."+ext;
+      return sb.storage.from("artwork").upload(path,aboutPhotoFile,{upsert:true}).then(function(up){
+        if(up.error)throw up.error;
+        photo_url=sb.storage.from("artwork").getPublicUrl(path).data.publicUrl;
+      });
+    });
+  }
+  chain.then(function(){
+    var value={name:name,bio:bio,photo_url:photo_url};
+    return sb.from("settings").upsert({key:"about",value:value}).then(function(r){if(r.error)throw r.error;state.about=value;});
+  }).then(function(){toast("About page saved");loadAdmin();})
+  .catch(function(e){btn.disabled=false;btn.innerHTML="Save about page";toast("Error: "+(e.message||"save failed"));});
+}
 
 /* ---------- boot ---------- */
 function boot(){
