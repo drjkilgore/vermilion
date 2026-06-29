@@ -225,6 +225,10 @@ img{display:block;max-width:100%;}
 .thumb img{width:100%;height:100%;object-fit:cover;}
 .thumb .badge{position:absolute;top:4px;left:4px;font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;background:var(--vermilion);color:#fff;padding:2px 6px;}
 .thumb .tb{position:absolute;bottom:0;left:0;right:0;display:flex;}
+.thumb .tb-top{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;}
+.thumb .tb-top button{background:rgba(28,23,20,.82);color:#fff;border:0;font-size:15px;line-height:1;padding:4px 9px;cursor:pointer;}
+.thumb .tb-top button:hover:not([disabled]){background:var(--vermilion);}
+.thumb .tb-top button[disabled]{opacity:.3;cursor:default;}
 .thumb .tb button{flex:1;background:rgba(28,23,20,.82);color:#fff;border:0;font-size:10px;padding:5px 2px;letter-spacing:.04em;}
 .thumb .tb button:hover{background:var(--vermilion);}
 .colorpick{display:flex;flex-wrap:wrap;gap:8px;}
@@ -914,7 +918,7 @@ function runImageAI(mode,prompt,btnId,busy,label){
   bgStatus("");
   function done(){if(btn){btn.disabled=false;btn.innerHTML=label;}}
   prepForAI(mode).then(function(p){
-    return fetch("/.netlify/functions/image",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({image:p.image,mask:p.mask,prompt:prompt,size:"1024x1024"})});
+    return fetch(SUPABASE_URL+"/functions/v1/image",{method:"POST",headers:{"content-type":"application/json","apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer "+SUPABASE_ANON_KEY},body:JSON.stringify({image:p.image,mask:p.mask,prompt:prompt,size:"1024x1024"})});
   }).then(function(r){return r.json().then(function(j){return {ok:r.ok,j:j};});}).then(function(o){
     if(!o.ok||!o.j||!o.j.ok)throw new Error((o.j&&o.j.error)||"request failed");
     return fetch("data:image/png;base64,"+o.j.image).then(function(r){return r.blob();});
@@ -983,10 +987,12 @@ function paintThumbs(){
   var t=$("thumbs");if(!t)return;
   t.innerHTML=formImgs.map(function(im,i){
     return '<div class="thumb">'+(im.is_primary?'<span class="badge">Cover</span>':"")+(im.is_detail?'<span class="badge" style="top:auto;bottom:26px;background:var(--champagne);color:#2c2410">Detail</span>':"")+
+      '<div class="tb-top"><button onclick="moveImg('+i+',-1)" title="Move left"'+(i===0?' disabled':'')+'>‹</button><button onclick="moveImg('+i+',1)" title="Move right"'+(i===formImgs.length-1?' disabled':'')+'>›</button></div>'+
       '<img src="'+esc(im.url)+'"/>'+
       '<div class="tb"><button onclick="setPrimary('+i+')">Cover</button><button onclick="toggleDetail('+i+')">Detail</button><button onclick="removeImg('+i+')">✕</button></div></div>';
   }).join("");
 }
+function moveImg(i,dir){var j=i+dir;if(j<0||j>=formImgs.length)return;var t=formImgs[i];formImgs[i]=formImgs[j];formImgs[j]=t;paintThumbs();}
 function setPrimary(i){formImgs.forEach(function(x,j){x.is_primary=(i===j);});paintThumbs();}
 function toggleDetail(i){formImgs[i].is_detail=!formImgs[i].is_detail;paintThumbs();}
 function removeImg(i){formImgs.splice(i,1);if(formImgs.length&&!formImgs.some(function(x){return x.is_primary;}))formImgs[0].is_primary=true;paintThumbs();}
