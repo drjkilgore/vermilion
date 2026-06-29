@@ -203,7 +203,11 @@ img{display:block;max-width:100%;}
 .stat .l{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--slate);margin-top:8px;}
 .rowtools{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
 .adlist{border:1px solid var(--border);border-radius:2px;overflow:hidden;}
-.adrow{display:grid;grid-template-columns:64px 1fr auto;gap:16px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);}
+.adrow{display:grid;grid-template-columns:auto 64px 1fr auto;gap:16px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);}
+.reorder{display:flex;flex-direction:column;gap:3px;}
+.reorder button{background:var(--surface);border:1px solid var(--border);color:var(--slate);width:26px;height:20px;line-height:1;font-size:11px;cursor:pointer;border-radius:2px;padding:0;}
+.reorder button:hover:not([disabled]){border-color:var(--vermilion);color:var(--vermilion);}
+.reorder button[disabled]{opacity:.28;cursor:default;}
 .adrow:last-child{border-bottom:0;}
 .adrow .th{width:64px;height:64px;object-fit:cover;background:var(--stone);}
 .adrow .ti{font-family:var(--serif);font-size:19px;}
@@ -275,7 +279,7 @@ img{display:block;max-width:100%;}
   .wrap{padding:0 22px;}
   .btn{width:100%;}
   .form-actions{flex-direction:column-reverse;gap:10px;}
-  .adrow{grid-template-columns:52px 1fr;}
+  .adrow{grid-template-columns:auto 52px 1fr;}
   .adrow .acts{grid-column:1 / -1;justify-content:flex-start;flex-wrap:wrap;margin-top:8px;}
   .sc-info{padding:24px 22px;}
   .filters{gap:8px;}
@@ -409,7 +413,7 @@ function loadPublic(){
 }
 function loadAdmin(){
   return Promise.all([
-    sb.from("artworks").select("*, artwork_images(*), collections(name)").order("updated_at",{ascending:false}),
+    sb.from("artworks").select("*, artwork_images(*), collections(name)").order("sort_order",{ascending:true}).order("updated_at",{ascending:false}),
     sb.from("collections").select("*").order("sort_order",{ascending:true}),
     sb.from("inquiries").select("*").order("created_at",{ascending:false})
   ]).then(function(r){state.artworks=(r[0].data||[]);state.collections=(r[1].data||[]);state.inquiries=(r[2]&&r[2].data)||[];renderAdminList();});
@@ -675,14 +679,15 @@ function renderAdminList(){
   if(!a.length){
     html+='<div class="empty"><h2>No works yet</h2><p>Add Barbara\'s first piece to begin the catalogue.</p></div>';
   }else{
-    html+='<div class="adlist">'+a.map(adminRow).join("")+'</div>';
+    html+='<div class="adlist">'+a.map(function(x,i){return adminRow(x,i,a.length);}).join("")+'</div>';
   }
   html+='</div>';$("app").innerHTML=html;
 }
 function stat(n,l){return '<div class="stat"><div class="n">'+n+'</div><div class="l">'+esc(l)+'</div></div>';}
-function adminRow(a){
+function adminRow(a,i,total){
   var nextAvail=a.availability==="available"?"reserved":a.availability==="reserved"?"sold":"available";
   return '<div class="adrow">'+
+    '<div class="reorder"><button onclick="moveArtwork('+i+',-1)"'+(i===0?' disabled':'')+' title="Move up">▲</button><button onclick="moveArtwork('+i+',1)"'+(i===total-1?' disabled':'')+' title="Move down">▼</button></div>'+
     '<img class="th" src="'+esc(primaryUrl(a))+'" alt=""/>'+
     '<div><div class="ti">'+esc(a.title)+'</div>'+
       '<div class="sub">'+esc([a.collections?a.collections.name:"",a.medium,a.dimensions,money(a.price,a.currency)].filter(Boolean).join("  ·  "))+'</div></div>'+
@@ -693,6 +698,18 @@ function adminRow(a){
       '<button class="mini" onclick="editArtwork(\''+a.id+'\')">Edit</button>'+
       '<button class="mini danger" onclick="deleteArtwork(\''+a.id+'\')">Delete</button>'+
     '</div></div>';
+}
+function moveArtwork(i,dir){
+  var arr=state.artworks, j=i+dir;
+  if(j<0||j>=arr.length)return;
+  var t=arr[i];arr[i]=arr[j];arr[j]=t;
+  var changed=[];
+  arr.forEach(function(x,idx){if(x.sort_order!==idx){x.sort_order=idx;changed.push({id:x.id,sort_order:idx});}});
+  renderAdminList();
+  if(!changed.length)return;
+  Promise.all(changed.map(function(u){return sb.from("artworks").update({sort_order:u.sort_order}).eq("id",u.id);})).then(function(rs){
+    for(var k=0;k<rs.length;k++){if(rs[k].error){toast("Order save failed: "+rs[k].error.message);return;}}
+  });
 }
 function cycleAvail(id,next){sb.from("artworks").update({availability:next}).eq("id",id).then(function(){loadAdmin();toast("Marked "+next);});}
 function deleteArtwork(id){
